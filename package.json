@@ -1,0 +1,12 @@
+{
+    "name": "web_app",
+    "version": "1.0.0",
+    "description": "Node.js on Docker and on Device",
+    "author": "Record Evolution GmbH",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {    
+    }
+}
