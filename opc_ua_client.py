@@ -6,12 +6,13 @@ import os
 
 # Get environment variables
 print("********************Get Environment Variables********************")
-SERVER_ADDRESS   = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/freeopcua/server/")
-SERVER_URL_TOPIC = os.environ.get("SERVER_URL_TOPIC", "OPCUA_SERVER_Reswarm")
-ENABLE_ENCRYPTION = os.environ.get('ENABLE_ENCRYPTION', True)
-READ_NODE_S = os.environ.get("READ_NODE_S", ["Node1"])
-READ_VARIABLE_S   = os.environ.get("READ_VARIABLE_S", ["Timestamp", "Devicename"])
-READ_OBJECT_S       = os.environ.get("READ_OBJECT_S", ["ObjectOne"])
+SERVER_ADDRESS      = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/freeopcua/server/")
+SERVER_URL_TOPIC    = os.environ.get("SERVER_URL_TOPIC", "OPCUA_SERVER_Reswarm")
+ENABLE_ENCRYPTION   = os.environ.get('ENABLE_ENCRYPTION', True)
+READ_NODE_S         = os.environ.get("READ_NODE_S", ["Node1"])
+READ_VARIABLE_S     = os.environ.get("READ_VARIABLE_S", [["Timestamp", "Devicename"], ["String1", "String2"]])
+READ_OBJECT_S       = os.environ.get("READ_OBJECT_S", ["ObjectOne", "ObjectTwo"])
+FREQ_DATA_LOG       = float(os.environ.get('FREQ_DATA_LOG', '2'))
 print('User specified values are set')
 
 # Initiate logger
@@ -66,14 +67,24 @@ try:
 except Exception as e:
     print("Error getting namespace! ", e)
 
-
+dicts = {}
 try: 
     while True:
         for ichild in range(0, len(READ_NODE_S)):
+            dicts["node"] = READ_NODE_S[ichild]
             for index in range(0, len(READ_OBJECT_S)):
-                for index_var in range(0, len(READ_VARIABLE_S)):
-                    print(children_root[ichild].get_children()[1].get_variables()[index_var].get_value())
-        time.sleep(2)
+                var_add = READ_VARIABLE_S[index]
+                dicts["object"] = READ_OBJECT_S[index]
+                for index_var in range(0, len(var_add)):
+                    main_object = "0:Objects"
+                    sub_object = str(idx_namespace) + ":" + READ_OBJECT_S[index]
+                    var_read = str(idx_namespace) + ":" + var_add[index_var]
+                    value_server = root.get_child([main_object, sub_object, var_read]).get_value()
+                    dicts["variable"] = var_add[index_var]
+                    dicts["value"] = value_server
+                    print(dicts)
+        dicts = {}
+        time.sleep(FREQ_DATA_LOG)
 
 except KeyboardInterrupt:
     client.disconnect()
