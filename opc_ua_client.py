@@ -10,9 +10,9 @@ SERVER_ADDRESS      = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/f
 SERVER_URL_TOPIC    = os.environ.get("SERVER_URL_TOPIC", "OPCUA_SERVER_Reswarm")
 ENABLE_ENCRYPTION   = os.environ.get('ENABLE_ENCRYPTION', True)
 READ_NODE_S         = os.environ.get("READ_NODE_S", ["Node1"])
-READ_VARIABLE_S     = os.environ.get("READ_VARIABLE_S", [["Timestamp", "Devicename"], ["String1", "String2"]])
+READ_VARIABLE_S     = os.environ.get("READ_VARIABLE_S", [["Timestamp", "Devicename"], ["Temperature", "Volt"]])
 READ_OBJECT_S       = os.environ.get("READ_OBJECT_S", ["ObjectOne", "ObjectTwo"])
-FREQ_DATA_LOG       = float(os.environ.get('FREQ_DATA_LOG', '2'))
+FREQ_DATA_LOG       = float(1/os.environ.get('FREQ_DATA_LOG', 2.0))
 print('User specified values are set')
 
 # Initiate logger
@@ -79,7 +79,13 @@ try:
                     main_object = "0:Objects"
                     sub_object = str(idx_namespace) + ":" + READ_OBJECT_S[index]
                     var_read = str(idx_namespace) + ":" + var_add[index_var]
-                    value_server = root.get_child([main_object, sub_object, var_read]).get_value()
+                    try:
+                        value_server = root.get_child([main_object, sub_object, var_read]).get_value()
+                    except Exception as e:
+                        print("Error reading value for Object: ", READ_OBJECT_S[index], " and Variable: ",  
+                        var_add[index_var], "! Probably OPC UA server is not configure to send data for Object: ", 
+                        READ_OBJECT_S[index], " and Variable: ", var_add[index_var])
+                        os.system('exit')
                     dicts["variable"] = var_add[index_var]
                     dicts["value"] = value_server
                     print(dicts)
