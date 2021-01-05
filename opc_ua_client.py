@@ -9,7 +9,9 @@ print("********************Get Environment Variables********************")
 SERVER_ADDRESS   = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/freeopcua/server/")
 SERVER_URL_TOPIC = os.environ.get("SERVER_URL_TOPIC", "OPCUA_SERVER_Reswarm")
 ENABLE_ENCRYPTION = os.environ.get('ENABLE_ENCRYPTION', True)
-NODE_READ = os.environ.get("NODE_READ", 1)
+READ_NODE_S = os.environ.get("READ_NODE_S", ["Node1"])
+READ_VARIABLE_S   = os.environ.get("READ_VARIABLE_S", ["Timestamp", "Devicename"])
+READ_OBJECT_S       = os.environ.get("READ_OBJECT_S", ["ObjectOne"])
 print('User specified values are set')
 
 # Initiate logger
@@ -67,8 +69,10 @@ except Exception as e:
 
 try: 
     while True:
-        for ichild in range(0, NODE_READ):
-            print(children_root[ichild].get_children()[1].get_variables()[0].get_value())
+        for ichild in range(0, len(READ_NODE_S)):
+            for index in range(0, len(READ_OBJECT_S)):
+                for index_var in range(0, len(READ_VARIABLE_S)):
+                    print(children_root[ichild].get_children()[1].get_variables()[index_var].get_value())
         time.sleep(2)
 
 except KeyboardInterrupt:
