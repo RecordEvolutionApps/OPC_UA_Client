@@ -22,10 +22,20 @@ RUN apt-get update && apt-get install -y \
     scons \
     swig \
     libxml2-dev \ 
-    libxslt-dev
+    libxslt-dev \ 
+    libraspberrypi-bin \ 
+    i2c-tools \  
+    python-smbus
 
 RUN git clone https://github.com/FreeOpcUa/python-opcua.git
 RUN cd python-opcua && python3 setup.py build && python3 setup.py install
+
+RUN pip3 install pyserial \
+    requests \
+    autobahn \
+    twisted \
+    pyserial \
+    cbor
     
 RUN mkdir /app
 COPY . /app
