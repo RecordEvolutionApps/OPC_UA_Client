@@ -10,6 +10,7 @@ import subprocess
 import logging
 import time
 import csv
+import sys
 import os
 
 # Declare global variables
@@ -214,15 +215,15 @@ def startClient():
                         print("Error reading value for Object: ", READ_OBJECT_S[index], " and Variable: ",  
                         var_add[index_var], "! Probably OPC UA server is not configure to send data for Object: ", 
                         READ_OBJECT_S[index], " and Variable: ", var_add[index_var])
-                        os.system('exit')
+                        #os.system('exit')
                     toPublish.append(var_add[index_var])
                     toPublish.append(value_server)
-
-                    # publish the data to WAMP router
-                    if PUBLISH_DATA == 'ON':pub_buffer.put(toPublish)
-                    if WRITE_FILE   == 'ON':write_buffer.put(toPublish)
-                    if pub_buffer.qsize() > 500000: pub_buffer.get()
-                    if write_buffer.qsize() > 500000: write_buffer.get()
+        print(toPublish)
+        # publish the data to WAMP router
+        if PUBLISH_DATA == 'ON':pub_buffer.put(toPublish)
+        if WRITE_FILE   == 'ON':write_buffer.put(toPublish)
+        if pub_buffer.qsize() > 500000: pub_buffer.get()
+        if write_buffer.qsize() > 500000: write_buffer.get()
     except KeyboardInterrupt:
         client.disconnect()
 
@@ -246,16 +247,21 @@ if __name__== "__main__":
         print("Endpoint for OPC UA client is set to: ", SERVER_ADDRESS)
     except Exception as e:
         print("Error while setting up endpoint for OPC UA client! ", e)
-        os.system('exit')
+        sys.exit(0)
 
     print("********************Setting Encryption********************")
-    if ENABLE_ENCRYPTION:
-        client.set_security_string("Basic256Sha256,SignAndEncrypt,certificate-example.der,private-key-example.pem")
-        client.secure_channel_timeout = 10000
-        client.session_timeout = 10000
-        print("Client Encryption enabled")
-    else:
-        print("Client Encryption disabled")
+    try:
+        if ENABLE_ENCRYPTION:
+            client.set_security_string("Basic256Sha256,SignAndEncrypt,certificate-example.der,private-key-example.pem")
+            client.secure_channel_timeout = 10000
+            client.session_timeout = 10000
+            print("Client Encryption enabled")
+        else:
+            print("Client Encryption disabled")
+    except Exception as e:
+        print("Error Client is not ready! Please make sure that the OPC UA Server listening at ", SERVER_ADDRESS, "\n", 
+        e)
+        sys.exit(0)
 
     print("********************Initialize OPC UA Server********************")
     # Connect the client
@@ -263,7 +269,7 @@ if __name__== "__main__":
         client.connect()
     except Exception as e:
         print("Error while connecting the client ", e)
-        os.system('exit')
+        sys.exit(0)
 
     # Load definition of server specific structures/extension objects
     client.load_type_definitions

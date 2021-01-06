@@ -1,13 +1,13 @@
 # OPC UA Client
-The app acts as an OPC UA Client in order to recieve data from an OPC UA Server. It publishes the data every
-x second to the WAMP router and also write it to a csv file.
+The app acts as an OPC UA Client in order to receive data from an OPC UA Server. It publishes the data every
+x second to the WAMP router and also writes it to a CSV file.
 
 ## Hardware
 1. Raspberry Pi registered in RESWARM ([For Detail Click Here](https://reswarm.io/docs/#/en/flash-your-iot-devices))
 
 ## Usage Instructions
-The Raspberry Pi does need a working Wifi connection, so you can control it remotely using the RESWARM Platform. The app 
-tries to connect to an OPC UA Server at ***opc.tcp://0.0.0.0:4840/freeopcua/server/*** by default. An error is thrown by the app, in case no OPC UA Server is listining to the default or user defined IP address.
+The Raspberry Pi does need a working Wi-Fi connection, so you can control it remotely using the RESWARM Platform. The app 
+tries to connect to an OPC UA Server at ***opc.tcp://0.0.0.0:4840/freeopcua/server/*** by default. An error is thrown by the app, in case no OPC UA Server is listening to the default or user-defined IP address.
 
 
 ## Install the App
@@ -18,7 +18,7 @@ There create a group and add the device to the group and install this app to thi
 device will start downloading the app. 
 
 ### Publishing Data
-Depending on the parameter settings below the data will be published to the reswarm WAMP router on the configured topic. You can listen to the topic with a Datapod to receive the data in near-realtime. In order to preserve the structure/format of the server data, the data is not formated/changed at all by the OPC UA Client and it is published as it recieved by the OPC UA Client. 
+Depending on the parameter settings below the data will be published to the reswarm WAMP router on the configured topic. You can listen to the topic with a Datapod to receive the data in near-realtime. In order to preserve the structure/format of the server data, the data is not formatted/changed at all by the OPC UA Client and it is published as it received by the OPC UA Client. 
 
 The data that is published will be of the following form:
 
@@ -29,7 +29,7 @@ root node name, object name, variable name, value of variable
 ### Writing Data to a File
 Depending on the parameter settings below the data is also written as a file into the configured folder. This file then can be moved to other places using other apps like the [AWS S3 Sender](https://reswarm.io/en/apps/AWS_S3_Sender).
 
-Respectively the data written to disk will be a comma seperated csv file of the form:
+Respectively the data written to disk will be a comma separated CSV file of the form:
 
 ```text
 root node name, object name, variable name, value of variable
@@ -56,7 +56,7 @@ MAX_ROWS_PER_FILE | After this many rows a new file will be started | 50
 MAX_TIME_PER_FILE | After this many seconds a new file will be started | 30
 
 ---
-The above mentioned parameters are a classic example of multiple object as well as variable nodes. In case the app must be run for a single object and variable nodes then following changes in parameters can be made:
+The above mentioned parameters are a classic example of multiple objects as well as variable nodes. In case the app must be run for a single object and variable nodes then the following changes in parameters can be made:
 
 ### For Single Object and Single Variable Nodes
 READ_OBJECT_S | Name of object node/s | ["ObjectOne"]\
