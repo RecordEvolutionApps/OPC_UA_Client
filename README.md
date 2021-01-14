@@ -1,13 +1,12 @@
 # OPC UA Client
-The app acts as an OPC UA Client in order to receive data from an OPC UA Server. It publishes the data every
-x second to the WAMP router and also writes it to a CSV file.
+The app acts as an OPC UA Client and fetches data from use specified objects and variable nodes. It also writes data to a named pipe/fifo at every x second.
 
 ## Hardware
 1. Raspberry Pi registered in RESWARM ([For Detail Click Here](https://reswarm.io/docs/#/en/flash-your-iot-devices))
 
 ## Usage Instructions
 The Raspberry Pi does need a working Wi-Fi connection, so you can control it remotely using the RESWARM Platform. The app 
-tries to connect to an OPC UA Server at ***opc.tcp://0.0.0.0:4840/freeopcua/server/*** by default. An error is thrown by the app, in case no OPC UA Server is listening to the default or user-defined IP address.
+tries to connect to an OPC UA Server at ***opc.tcp://0.0.0.0:4840/freeopcua/server/*** by default. 
 
 
 ## Install the App
@@ -17,58 +16,45 @@ There create a group and add the device to the group and install this app to thi
 ([Add a New Group](https://reswarm.io/docs/#/en/device-management?id=add-a-new-device-group)). Now the 
 device will start downloading the app. 
 
-### Publishing Data
-Depending on the parameter settings below the data will be published to the reswarm WAMP router on the configured topic. You can listen to the topic with a Datapod to receive the data in near-realtime. In order to preserve the structure/format of the server data, the data is not formatted/changed at all by the OPC UA Client and it is published as it received by the OPC UA Client. 
-
-The data that is published will be of the following form:
-
-```text
-root node name, object name, variable name, value of variable
-```
 
 ### Writing Data to a File
-Depending on the parameter settings below the data is also written as a file into the configured folder. This file then can be moved to other places using other apps like the [AWS S3 Sender](https://reswarm.io/en/apps/AWS_S3_Sender).
+Depending on the parameter settings below, the data is written into a user specified pipe/fifo. Please use ***File Writer*** app to create a csv or other available format file from the data written into the pipe/fifo.
 
-Respectively the data written to disk will be a comma separated CSV file of the form:
+Respectively, the data written to the named pipe/fifo is of the following format:
 
-```text
-root node name, object name, variable name, value of variable
+```json
+{
+    "name of 1st variable node": "value of 1st variable node",
+    "name of 2nd variable node": "value of 2nd variable node",
+    "name of n variable node": "value of 3rd variable node"
+}
 ```
-
-Internally the data will be fetched and buffered in memory. The data will be sent as soon as a network connection is available. If no network is available the internal buffer can become very large. After 500000 records in the buffer, the oldest data will be removed when new data is buffered. 
 
 ## Parameters
 
 Parameter | Meaning | Default
 --- | --- | ---
-PUBLISH_DATA | If 'ON' then data will be published | ON
-TOPIC_PREFIX | Topic prefix for WAMP publishing The final topic will be `TOPIC_PREFIX.DEVICE_SERIAL_NUMBER` | reswarm.opc_ua_client
-WRITE_FILE | IF 'ON' then files will be written | ON
-DATA_SUBFOLDER | Subfolder under `/shared` to put the output files in | opc_ua_client
-FREQ_DATA_LOG | Frequency in Hertz for data logging | 2
-SERVER_ADDRESS | IP address of OPC UA Server for OPC UA Client to listen to | opc.tcp://0.0.0.0:4840/freeopcua/server/
-LISTEN_NAMESPACE | Namespace under which OPC UA Server is registered| OPCUA_SERVER_Reswarm
-ENABLE_ENCRYPTION | Should the communication between OPC UA Server and OPC UA Client be encrypted | True
-READ_NODE_S | Name of root node of OPC UA Server | Node1
-READ_OBJECT_S | Name of object node/s to be read| ["ObjectOne", "ObjectTwo"]
-READ_VARIABLE_S | Name of variable node/s to be read | [["Timestamp", "Devicename"], ["Temperature", "Volt"]]
-MAX_ROWS_PER_FILE | After this many rows a new file will be started | 50
-MAX_TIME_PER_FILE | After this many seconds a new file will be started | 30
+SERVER_ADDRESS      | IP address of OPC UA Server for OPC UA Client to listen to | opc.tcp://0.0.0.0:4840/freeopcua/server/
+LISTEN_NAMESPACE    | Namespace under which OPC UA Server is registered          | OPCUA_SERVER_Reswarm
+ENABLE_ENCRYPTION   | Should the communication between OPC UA Server and OPC UA Client be encrypted | True
+READ_OBJECTS        | Name of object node/s to be read                           | ["Object_Node_1"]
+READ_VARIABLES      | Name of variable node/s to be read                         | [["Variable_1", "Variable_2"]]
+WRITE_TO_PIPE       | Name of output pipe                                        | opc_ua_client_1
 
 ---
-The above mentioned parameters are a classic example of multiple objects as well as variable nodes. In case the app must be run for a single object and variable nodes then the following changes in parameters can be made:
+The above mentioned parameters are a classic example of a single object and a single variable node. In case the app must be run for multiple objects and variable nodes then the following changes in the parameters can be made:
 
 ### For Single Object and Single Variable Nodes
-READ_OBJECT_S | Name of object node/s | ["ObjectOne"]\
-READ_VARIABLE_S | Name of variable node/s | [["Timestamp"]]
+READ_OBJECT_S | Name of object node/s | ["Object_Node_1"]\
+READ_VARIABLE_S | Name of variable node/s | [["Variable_1"]]
 
 ### For Single Object and Multiple Variable Nodes 
-READ_OBJECT_S | Name of object node/s | ["ObjectOne"]\
-READ_VARIABLE_S | Name of variable node/s | [["Timestamp", "Devicename"]]
+READ_OBJECT_S | Name of object node/s | ["Object_Node_1"]\
+READ_VARIABLE_S | Name of variable node/s | [["Variable_1", "Variable_2"]]
 
 ### For Multiple Objects and Multiple Variable Nodes 
-READ_OBJECT_S | Name of object node/s | ["ObjectOne", "ObjectTwo"]\
-READ_VARIABLE_S | Name of variable node/s | [["Timestamp", "Devicename"], ["Temperature", "Volt"]]
+READ_OBJECT_S | Name of object node/s | ["Object_Node_1", "Object_Node_2"]\
+READ_VARIABLE_S | Name of variable node/s | [["Variable_1", "Variable_2"], ["Variable_1", "Variable_2"]]
 
 ---
 
