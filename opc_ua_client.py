@@ -12,9 +12,9 @@ print("********************Get Environment Variables********************")
 SERVER_ADDRESS      = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/server/")
 LISTEN_NAMESPACE    = os.environ.get("LISTEN_NAMESPACE", "OPCUA_SERVER_Reswarm")
 ENABLE_ENCRYPTION   = os.environ.get('ENABLE_ENCRYPTION', 'true')
-READ_OBJECTS        = os.environ.get("READ_OBJECTS")
-READ_VARIABLES      = os.environ.get("READ_VARIABLES")
-WRITE_TO_PIPE       = '/shared' + os.path.join('/', os.environ.get('WRITE_TO_PIPE'))
+READ_OBJECTS        = [os.environ.get("READ_OBJECTS")]
+READ_VARIABLES      = [[os.environ.get("READ_VARIABLES")]]
+WRITE_TO_PIPE       = '/shared' + os.path.join('/', [os.environ.get('WRITE_TO_PIPE')])
 FREQ_DATA_LOG       = 1
 print('User specified values are set')
 
