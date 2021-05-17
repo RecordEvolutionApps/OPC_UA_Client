@@ -7,16 +7,15 @@ import json
 import csv
 import sys
 import os
-import concurrent.futures
 
 print("********************Get Environment Variables********************")
-SERVER_ADDRESS         = os.environ.get('SERVER_ADDRESS', "opc.tcp://127.0.0.1:12345")
-LISTEN_NAMESPACE       = os.environ.get('LISTEN_NAMESPACE', "OPUA_test_server")
-ENABLE_ENCRYPTION      = os.environ.get('ENABLE_ENCRYPTION', False)
-READ_OBJECTS           = os.environ.get('READ_OBJECTS', ["Object_Node_1", "Object_Node_2"])
-READ_VARIABLES        = os.environ.get('READ_VARIABLES',["Variable_1", "Variable_2"])
-WRITE_TO_PIPE         = os.environ.get('WRITE_TO_PIPE', ['opc_ua_client_1', 'opc_ua_client_2'])
-FREQ_DATA_LOG         = 1
+SERVER_ADDRESS      = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/server/")
+LISTEN_NAMESPACE    = os.environ.get("LISTEN_NAMESPACE", "OPCUA_SERVER_Reswarm")
+ENABLE_ENCRYPTION   = os.environ.get('ENABLE_ENCRYPTION', True)
+READ_OBJECTS        = os.environ.get("READ_OBJECTS")
+READ_VARIABLES      = os.environ.get("READ_VARIABLES")
+WRITE_TO_PIPE       = os.environ.get('WRITE_TO_PIPE')
+FREQ_DATA_LOG       = 1
 print('User specified values are set')
 
 """
@@ -30,8 +29,6 @@ print('User specified values are set')
     Description:
         These functions demonstrate the possibility of fetching sensor/controller/device data
         from a OPC UA server.
-
-    SOME UPDATED HERE ==========!@!@!@!@!!@@ ===========
         
 """
 
@@ -46,82 +43,50 @@ def write_to_pipe(data_in, output_pipe):
     os.write(output_pipe, data_out)
 
 def init_node(name_space):
-	global all_node
-	for index in range(0, len(READ_OBJECTS)):
-		#var_add = READ_VARIABLES[index]
-		var_add = READ_VARIABLES
-		for index_var in range(0, len(var_add)):
-			name_to_append = "0:Objects" + str(name_space) + ":" + READ_OBJECTS[index] + str(name_space) + ":" + var_add[index_var]
-			all_node.append(name_to_append)
+    global all_node
+    for index in range(0, len(READ_OBJECTS)):
+        var_add = READ_VARIABLES[index]
+        for index_var in range(0, len(var_add)):
+            name_to_append = "0:Objects" + str(name_space) + ":" + READ_OBJECTS[index] + str(name_space) + ":" + var_add[index_var]
+            all_node.append(name_to_append)
 
-def receive_data(name_space,idx):
-	global stop_worker
-	toWrite = {}
-	try:
-		var_add = READ_VARIABLES
-		main_object = "0:Objects"
-		sub_object = str(name_space) + ":" + READ_OBJECTS[idx]
-		status_node = str(name_space) + ":" + 'Status'
-		status=root.get_child([main_object, sub_object, status_node]).get_value()
-		print('Status:', idx, ', ', status)
-		if status == 'Sent':
-			root.get_child([main_object, sub_object, status_node]).set_value('Reading')
-			for index_var in range(0, len(var_add)):
-				var_read = str(name_space) + ":" + var_add[index_var]
-				name_to_append = main_object + sub_object + var_read
-				#if name_to_append not in close_node:
-				if stop_worker[idx] is not True:
-					try:
-						value_server = root.get_child([main_object, sub_object, var_read]).get_value()
-						print([main_object, sub_object, var_read])
-						print("value_server", idx, ', ', value_server)
-						toWrite[var_add[index_var]] = value_server
-						#print('Var Property: ', root.get_child([main_object, sub_object, var_read]).get_parent().get_properties()[index_var].get_value())
-						#print('Node: ', root.get_child([main_object, sub_object, var_read]).get_parent().get_properties()[index_var])
-					except oSError as e:
-						if e.errno == 32:
-							print('Wrong node')
-							time.sleep(10)
-						else:
-							print('Connection refuse')
-							try:
-								value_server = root.get_child([main_object, sub_object, var_read]).get_value()
-								toWrite[var_add[index_var]] = value_server
-							except oSError as e:
-								if e.errno == 32:
-									print("closing the object node")
-									#close_node.append(name_to_append)
-									stop_worker[idx] = True
-								else:
-									print("Connection Refuse")
-			root.get_child([main_object, sub_object, status_node]).set_value('Read')
-	except KeyboardInterrupt:
-		client.disconnect()
-	print('to write: ', idx, ', ', toWrite)
-	return toWrite
-
-def start_worker(idx):
-	global stop_worker
-	while not stop_worker[idx]:
-		try:
-			data_received[idx] = receive_data(idx_namespace, idx)
-			print("data received:", idx, ', ', data_received[idx])
-			if update_status[idx] == data_received[idx] or data_received[idx]=={}: #NEW!!!
-			#if data_received[idx] == {}:
-				print('node value not updated') #NEW!!!
-			else:                               #NEW!!!
-				write_to_pipe(data_received[idx],globals()[WRITE_TO_PIPE[idx]]) #NEW!!!
-			#if set(all_node) == set(close_node):
-			if stop_worker[idx] == True:
-				#stop_worker = True
-				os.close(globals()[WRITE_TO_PIPE[idx]])
-				#client.disconnect()
-			update_status[idx] = data_received[idx]
-			time.sleep(FREQ_DATA_LOG)
-		except KeyboardInterrupt:
-			os.close(globals()[WRITE_TO_PIPE[idx]])
-			client.disconnect()
-			sys.exit(0)
+def start_client(name_space):
+    global close_node
+    toWrite = {}
+    try: 
+        # loop over objects
+        for index in range(0, len(READ_OBJECTS)):
+            var_add = READ_VARIABLES[index]
+            # loop over variables
+            for index_var in range(0, len(var_add)):
+                main_object = "0:Objects"
+                sub_object = str(name_space) + ":" + READ_OBJECTS[index]
+                var_read = str(name_space) + ":" + var_add[index_var]
+                name_to_append = main_object + sub_object + var_read
+                if name_to_append not in close_node:
+                    try:
+                        value_server = root.get_child([main_object, sub_object, var_read]).get_value()
+                        toWrite[var_add[index_var]] = value_server
+                    except OSError as e:
+                        if e.errno == 32:
+                            print("WARNING:__WrongNode__:no value found for object node: ", READ_OBJECTS[index], " and variable node: ",  
+                            var_add[index_var])
+                            print("SLEEP:__Wait__:wait 10 seconds for data")
+                            time.sleep(10)
+                        else:
+                            print("ERROR:__ConnectionRefuse__:connection refused!")
+                            try:
+                                value_server = root.get_child([main_object, sub_object, var_read]).get_value()
+                                toWrite[var_add[index_var]] = value_server
+                            except OSError as e:
+                                if e.errno == 32:
+                                    print("closing the object node: ", READ_OBJECTS[index], " and variable node: ",  var_add[index_var])
+                                    close_node.append(name_to_append)
+                                else:
+                                    print("ERROR:__ConnectionRefuse__:connection refused!")
+    except KeyboardInterrupt:
+        client.disconnect()
+    return toWrite
 
 if __name__== "__main__":
     all_node = []
@@ -135,28 +100,26 @@ if __name__== "__main__":
     except AttributeError:
         logging.error(" Logger not initialized!")
 
-    all_node = []
     print("********************Create Output Pipe********************")
-    for pipes in WRITE_TO_PIPE:
-        path_pipe = '/shared' + os.path.join('/', pipes)
-        try:
-            os.mkfifo(path_pipe)
-        except FileNotFoundError as e:
-            if os.path.exists(path_pipe):
-                print("ERROR:__PathNotExist__:path does not exist")
-                sys.exit(0)
-        except OSError as e:
-            print("INFO:__CreatePipe__:pipe already exist")
-            pass
-
-        try:
-            #globals()[WRITE_TO_PIPE] = os.open(path_pipe, os.O_RDWR)
-            globals()[pipes] = os.open(path_pipe, os.O_RDWR)
-            print("INFO:__OpenPipe__:output pipe opened ", path_pipe)
-        except NameError:
-            print("ERROR:__OpenPipe__:cannot open pipe: ", path_pipe)
-            print("program terminated!")
+    path_pipe = '/shared' + os.path.join('/', WRITE_TO_PIPE)
+    try:
+        os.mkfifo(path_pipe)
+        print("INFO:__CreatePipe__:pipe created")
+    except FileNotFoundError as e:
+        print("ERROR:__CreatePipe__:cannot create pipe!", e)
+        if os.path.exists(path_pipe):
+            print("ERROR:__PathNotExist__:path does not exist ", path_pipe)
             sys.exit(0)
+    except OSError as e:
+        print("INFO:__CreatePipe__:pipe already exist")
+        pass
+    try:
+        globals()[WRITE_TO_PIPE] = os.open(path_pipe, os.O_RDWR)
+        print("INFO:__OpenPipe__:output pipe opened ", path_pipe)
+    except NameError:
+        print("ERROR:__OpenPipe__:cannot open pipe: ", path_pipe)
+        print("program terminated!")
+        sys.exit(0)
 
     print("********************Initialize OPC UA Client********************")
     try:
@@ -176,7 +139,7 @@ if __name__== "__main__":
         else:
             print("INFO:__Encryption__:client Encryption disabled")
     except OSError:
-       	print("ERROR:__ConnectionRefused__:client cannot listent to OPC UA Server!" + "\n" + 
+        print("ERROR:__ConnectionRefused__:client cannot listent to OPC UA Server!" + "\n" + 
         "Please make sure that the OPC UA Server is running at " + 
         SERVER_ADDRESS)
         sys.exit(0)
@@ -197,14 +160,14 @@ if __name__== "__main__":
     # Client has a few methods to get proxy to UA nodes that should always be in address space such as Root or Objects
     root = client.get_root_node()
     print("INFO:__OPC UA Server__:root node is: ", root)
-    objects= client.get_objects_node()
+    objects = client.get_objects_node()
     print("INFO:__OPC UA Server__:objects node is: ", objects)
 
     # Node objects have methods to read and write node attributes as well as browse or populate address space
     print("INFO:__OPC UA Server__:children of root are: ", root.get_children())
 
     print("********************Get Namespace********************")
-    # gettting our namespace idx
+        # gettting our namespace idx
     try:
         idx_namespace = client.get_namespace_index(LISTEN_NAMESPACE)
         children_root = root.get_children()
@@ -213,12 +176,31 @@ if __name__== "__main__":
         print("ERROR:__InvalidNameSpace__:invalid name space provided! ", LISTEN_NAMESPACE)
         sys.exit(0)
 
-    print("INFO:__GetData__:start reading server data")
-    init_node(idx_namespace)
-    update_status = [None] * len(READ_OBJECTS)
-    data_received = [None] * len(READ_OBJECTS)
-    stop_worker = [False] * len(READ_OBJECTS)
-    idx = [r for r in range(0,len(READ_OBJECTS))]
+print("INFO:__GetData__:start reading server data")
+init_node(idx_namespace)
+stop_program = False
+update_status = None
+try:
+    while not stop_program:
+        data_received = start_client(idx_namespace)
+        write_to_pipe(data_received, globals()[WRITE_TO_PIPE])
+        if set(all_node) == set(close_node):
+            stop_program = True
+            print("INFO:__CloseNode__:all nodes are closed. Closing the OPC UA Client")
+            os.close(globals()[WRITE_TO_PIPE])
+            print("INFO:__ClosePipe__:closing output pipe " + WRITE_TO_PIPE)
+            client.disconnect()
+        if update_status == data_received:
+            logger.warn('node value not updated')
+        update_status = data_received
+        time.sleep(FREQ_DATA_LOG)
+except KeyboardInterrupt:
+        os.close(globals()[WRITE_TO_PIPE])
+        client.disconnect()
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(start_worker, idx)
+
+    
+
+
+
+

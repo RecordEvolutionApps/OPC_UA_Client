@@ -37,9 +37,9 @@ Parameter | Meaning | Default
 SERVER_ADDRESS      | IP address of OPC UA Server for OPC UA Client to listen to | opc.tcp://0.0.0.0:4840/freeopcua/server/
 LISTEN_NAMESPACE    | Namespace under which OPC UA Server is registered          | OPCUA_SERVER_Reswarm
 ENABLE_ENCRYPTION   | Should the communication between OPC UA Server and OPC UA Client be encrypted | True
-READ_OBJECTS        | Name of object node/s to be read                           | ["Object_Node_1"]
-READ_VARIABLES      | Name of variable node/s to be read                         | [["Variable_1", "Variable_2"]]
-WRITE_TO_PIPE       | Name of output pipe                                        | opc_ua_client_1
+READ_OBJECTS        | Name of object node/s to be read                           | 
+READ_VARIABLES      | Name of variable node/s to be read                         | 
+WRITE_TO_PIPE       | Name of output pipe                                        | 
 
 ---
 The above mentioned parameters are a classic example of a single object and a single variable node. In case the app must be run for multiple objects and variable nodes then the following changes in the parameters can be made:
