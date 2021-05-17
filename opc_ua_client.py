@@ -9,12 +9,12 @@ import sys
 import os
 
 print("********************Get Environment Variables********************")
-SERVER_ADDRESS      = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/freeopcua/server/")
+SERVER_ADDRESS      = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/server/")
 LISTEN_NAMESPACE    = os.environ.get("LISTEN_NAMESPACE", "OPCUA_SERVER_Reswarm")
 ENABLE_ENCRYPTION   = os.environ.get('ENABLE_ENCRYPTION', True)
-READ_OBJECTS        = os.environ.get("READ_OBJECTS", ["Object_Node_1"])
-READ_VARIABLES      = os.environ.get("READ_VARIABLES", [["Variable_1", "Variable_2"]])
-WRITE_TO_PIPE       = os.environ.get('WRITE_TO_PIPE', 'opc_ua_client_1')
+READ_OBJECTS        = os.environ.get("READ_OBJECTS")
+READ_VARIABLES      = os.environ.get("READ_VARIABLES")
+WRITE_TO_PIPE       = os.environ.get('WRITE_TO_PIPE')
 FREQ_DATA_LOG       = 1
 print('User specified values are set')
 
@@ -39,6 +39,7 @@ def write_to_pipe(data_in, output_pipe):
         data_out = data_in.encode()
     else:
         data_out = str(data_in).encode()
+    print("INFO:data received from OPC Server: " + str(data_out))
     os.write(output_pipe, data_out)
 
 def init_node(name_space):
@@ -107,7 +108,7 @@ if __name__== "__main__":
     except FileNotFoundError as e:
         print("ERROR:__CreatePipe__:cannot create pipe!", e)
         if os.path.exists(path_pipe):
-            print("ERROR:__PathNotExist__:path does not exist")
+            print("ERROR:__PathNotExist__:path does not exist ", path_pipe)
             sys.exit(0)
     except OSError as e:
         print("INFO:__CreatePipe__:pipe already exist")

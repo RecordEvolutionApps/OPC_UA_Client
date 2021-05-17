@@ -27,15 +27,18 @@ RUN apt-get update && apt-get install -y \
     i2c-tools \  
     python-smbus
 
-RUN git clone https://github.com/FreeOpcUa/python-opcua.git
-RUN cd python-opcua && python3 setup.py build && python3 setup.py install
-
-RUN pip3 install pyserial \
+RUN pip3 install pytz \
+    python-dateutil \
+    lxml \
+    pyserial \
     requests \
     autobahn \
     twisted \
     pyserial \
     cbor
+
+RUN git clone https://github.com/FreeOpcUa/python-opcua.git
+RUN cd python-opcua && python3 setup.py build && python3 setup.py install 
     
 RUN mkdir /app
 COPY . /app
