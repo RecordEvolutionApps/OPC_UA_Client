@@ -1,0 +1,45 @@
+############################################################
+# Sample Environment variable template
+# Defines what environment variables can be set by the user of the app
+# Defines what the signature of a each variable should look like
+############################################################
+
+# NOTE: Template entries without a label property will not be displayed
+# NOTE: 'OPTIONAL' values can be left out
+
+SERVER_ADDRESS:
+    defaultValue: opc.tcp://0.0.0.0:4840/server/
+    description: 'IP address where OPC Server is hosted'
+    label: 'IP address to host OPC Server'
+    type: text
+    secret: false
+    optional: false
+LISTEN_NAMESPACE:
+    defaultValue: OPCUA_SERVER_Reswarm # OPTIONAL | Default value. (string | number)
+    description: 'Namespace of OPC Server' # OPTIONAL | Description. (string)
+    label: Namespace of OPC Server' # REQUIRED | Label displayed above the input field. (string)
+    type: 'text' # REQUIRED | Type of value. ('numeric' | 'text' | 'boolean')
+    secret: false # OPTIONAL | Makes value invisible once set. (boolean)
+    optional: true # OPTIONAL | Optional or required. (boolean)
+ENABLE_ENCRYPTION:
+    defaultValue: 'true'
+    description: 'Should the communication between Server and Client be encrypted'
+    label: 'Encrypt Server Client Communication'
+    type: text
+    secret: false
+    optional: false
+READ_OBJECTS:
+    label: 'Object nodes to read from the OPC server/ IP address'
+    type: text
+    secret: false
+    optional: false
+READ_VARIABLES:
+    label: 'Variable nodes to read from the OPC server/ IP address'
+    type: text
+    secret: false
+    optional: false 
+WRITE_TO_PIPE:
+    label: 'Pipe name to which OPC Client data must be written'
+    type: text
+    secret: false
+    optional: false

@@ -11,10 +11,10 @@ import os
 print("********************Get Environment Variables********************")
 SERVER_ADDRESS      = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/server/")
 LISTEN_NAMESPACE    = os.environ.get("LISTEN_NAMESPACE", "OPCUA_SERVER_Reswarm")
-ENABLE_ENCRYPTION   = os.environ.get('ENABLE_ENCRYPTION', True)
+ENABLE_ENCRYPTION   = os.environ.get('ENABLE_ENCRYPTION', 'true')
 READ_OBJECTS        = os.environ.get("READ_OBJECTS")
 READ_VARIABLES      = os.environ.get("READ_VARIABLES")
-WRITE_TO_PIPE       = os.environ.get('WRITE_TO_PIPE')
+WRITE_TO_PIPE       = '/shared' + os.path.join('/', os.environ.get('WRITE_TO_PIPE'))
 FREQ_DATA_LOG       = 1
 print('User specified values are set')
 
@@ -131,7 +131,7 @@ if __name__== "__main__":
 
     print("********************Setting Encryption********************")
     try:
-        if ENABLE_ENCRYPTION:
+        if ENABLE_ENCRYPTION == 'true':
             client.set_security_string("Basic256Sha256,SignAndEncrypt,certificate-example.der,private-key-example.pem")
             client.secure_channel_timeout = 10000
             client.session_timeout        = 10000
