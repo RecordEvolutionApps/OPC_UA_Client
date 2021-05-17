@@ -1,5 +1,5 @@
 # OPC UA Client
-The app acts as an OPC UA Client and fetches data from use specified objects and variable nodes. It also writes data to a named pipe/fifo at every x second.
+The app acts as an OPC UA Client and fetches data from user specified objects and variable nodes. It also writes data to a named pipe/fifo at every x second.
 
 ## Hardware
 1. Raspberry Pi registered in RESWARM ([For Detail Click Here](https://reswarm.io/docs/#/en/flash-your-iot-devices))
