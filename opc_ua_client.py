@@ -12,10 +12,12 @@ print("********************Get Environment Variables********************")
 SERVER_ADDRESS      = os.environ.get('SERVER_ADDRESS', "opc.tcp://0.0.0.0:4840/server/")
 LISTEN_NAMESPACE    = os.environ.get("LISTEN_NAMESPACE", "OPCUA_SERVER_Reswarm")
 ENABLE_ENCRYPTION   = os.environ.get('ENABLE_ENCRYPTION', 'true')
-READ_OBJECTS        = [os.environ.get("READ_OBJECTS")]
-READ_VARIABLES      = [[os.environ.get("READ_VARIABLES")]]
-WRITE_TO_PIPE       = '/shared' + os.path.join('/', [os.environ.get('WRITE_TO_PIPE')])
-FREQ_DATA_LOG       = 1
+OBJ_VAR_NODES       = os.environ.get("OBJ_VAR_NODES")        
+WRITE_TO_PIPE       = os.environ.get('WRITE_TO_PIPE')
+FREQ_DATA_LOG       = 1        
+env_var_json        = json.loads(OBJ_VAR_NODES)
+READ_OBJECTS        = [*env_var_json.keys()]
+READ_VARIABLES      = [*env_var_json.values()]
 print('User specified values are set')
 
 """
@@ -39,7 +41,7 @@ def write_to_pipe(data_in, output_pipe):
         data_out = data_in.encode()
     else:
         data_out = str(data_in).encode()
-    print("INFO:data received from OPC Server: " + str(data_out))
+    #print("INFO:data received from OPC Server: " + str(data_out))
     os.write(output_pipe, data_out)
 
 def init_node(name_space):

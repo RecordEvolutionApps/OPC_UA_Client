@@ -28,16 +28,11 @@ ENABLE_ENCRYPTION:
     type: text
     secret: false
     optional: false
-READ_OBJECTS:
-    label: 'Object nodes to read from the OPC server/ IP address'
+OBJ_VAR_NODES:
+    label: 'Object and variable nodes as json string i.e., {"obj 1": ["var 1", "var n"], "obj 2": ["var 1"]}'
     type: text
     secret: false
     optional: false
-READ_VARIABLES:
-    label: 'Variable nodes to read from the OPC server/ IP address'
-    type: text
-    secret: false
-    optional: false 
 WRITE_TO_PIPE:
     label: 'Pipe name to which OPC Client data must be written'
     type: text
