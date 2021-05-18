@@ -44,8 +44,6 @@ RUN mkdir /app
 COPY . /app
 WORKDIR /app
 
-#ENV OBJ_VAR_NODES '{"Obj_Node" : ["Variable_1", "Variable_2"]}'
-#ENV WRITE_TO_PIPE 'opc_ua_pip_write'
 CMD python3 -u opc_ua_client.py
 #CMD sleep 10h
 

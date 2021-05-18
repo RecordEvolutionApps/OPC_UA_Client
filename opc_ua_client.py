@@ -69,23 +69,10 @@ def start_client(name_space):
                     try:
                         value_server = root.get_child([main_object, sub_object, var_read]).get_value()
                         toWrite[var_add[index_var]] = value_server
-                    except OSError as e:
-                        if e.errno == 32:
-                            print("WARNING:__WrongNode__:no value found for object node: ", READ_OBJECTS[index], " and variable node: ",  
-                            var_add[index_var])
-                            print("SLEEP:__Wait__:wait 10 seconds for data")
-                            time.sleep(10)
-                        else:
-                            print("ERROR:__ConnectionRefuse__:connection refused!")
-                            try:
-                                value_server = root.get_child([main_object, sub_object, var_read]).get_value()
-                                toWrite[var_add[index_var]] = value_server
-                            except OSError as e:
-                                if e.errno == 32:
-                                    print("closing the object node: ", READ_OBJECTS[index], " and variable node: ",  var_add[index_var])
-                                    close_node.append(name_to_append)
-                                else:
-                                    print("ERROR:__ConnectionRefuse__:connection refused!")
+                    except:
+                        print("INFO:__ConnectionRefuse__:no connection to OPC UA SERVER!")
+                        print("INFO:Closing Node")
+                        close_node.append(name_to_append)
     except KeyboardInterrupt:
         client.disconnect()
     return toWrite
@@ -191,7 +178,11 @@ try:
             print("INFO:__CloseNode__:all nodes are closed. Closing the OPC UA Client")
             os.close(globals()[WRITE_TO_PIPE])
             print("INFO:__ClosePipe__:closing output pipe " + WRITE_TO_PIPE)
-            client.disconnect()
+            try:
+                client.disconnect()
+            except:
+                print("INFO:__OPC UA Client__:client disconnected")
+                print("____________PROGRAM CLOSED____________")
         if update_status == data_received:
             logger.warn('node value not updated')
         update_status = data_received
