@@ -2,19 +2,16 @@
 The app acts as an OPC UA Client and fetches data from user specified objects and variable nodes. It also writes data to a named pipe/fifo at every x second.
 
 ## Hardware
-1. Raspberry Pi registered in RESWARM ([For Detail Click Here](https://reswarm.io/docs/#/en/flash-your-iot-devices))
+1. Industrial PC registered in RESWARM ([For Detail Click Here](https://docs.record-evolution.de/#/en/Reswarm/reflasher))
 
 ## Usage Instructions
-The Raspberry Pi does need a working Wi-Fi connection, so you can control it remotely using the RESWARM Platform. The app 
+The Industrial PC does need a working Wi-Fi connection, so you can control it remotely using the RESWARM Platform. The app 
 tries to connect to an OPC UA Server at ***opc.tcp://0.0.0.0:4840/freeopcua/server/*** by default. 
 
 
 ## Install the App
-To use the app on your Raspberry Pi, go to RESWARM into the devices menu of the swarm where your device is 
-registred ([How To Navigate in RESWARM](https://reswarm.io/docs/#/en/device-management?id=basic-navigation)).
-There create a group and add the device to the group and install this app to this group as well 
-([Add a New Group](https://reswarm.io/docs/#/en/device-management?id=add-a-new-device-group)). Now the 
-device will start downloading the app. 
+To use the app on your Industrial PC, go to RESWARM into the devices menu of the swarm where your device is registred.
+There create a group and add the device to the group and install this app to this group as well. Now the device will start downloading the app. 
 
 
 ### Writing Data to a File
