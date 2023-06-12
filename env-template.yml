@@ -7,36 +7,35 @@
 # NOTE: Template entries without a label property will not be displayed
 # NOTE: 'OPTIONAL' values can be left out
 
-SERVER_ADDRESS:
-    defaultValue: opc.tcp://0.0.0.0:4840/server/
-    description: 'IP address where OPC Server is hosted'
-    label: 'IP address to host OPC Server'
+OPCUA_URL:
+    defaultValue: 'opc.tcp://localhost:4840/freeopcua/server/'
+    description: 'Connects to the given OPCUA Server url'
+    label: 'OPCUA Server url'
     type: text
     secret: false
     optional: false
 LISTEN_NAMESPACE:
-    defaultValue: OPCUA_SERVER_Reswarm # OPTIONAL | Default value. (string | number)
+    defaultValue: 'http://examples.freeopcua.github.io' # OPTIONAL | Default value. (string | number)
     description: 'Namespace of OPC Server' # OPTIONAL | Description. (string)
     label: Namespace of OPC Server' # REQUIRED | Label displayed above the input field. (string)
     type: 'text' # REQUIRED | Type of value. ('numeric' | 'text' | 'boolean')
     secret: false # OPTIONAL | Makes value invisible once set. (boolean)
-    optional: true # OPTIONAL | Optional or required. (boolean)
-ENABLE_ENCRYPTION:
-    defaultValue: 'true'
-    description: 'Should the communication between Server and Client be encrypted'
-    label: 'Encrypt Server Client Communication'
-    type: text
+    optional: false # OPTIONAL | Optional or required. (boolean)
+OPCUA_VARIABLES:
+    label: 'Json String of OPCUA Object & Variable names i.e., {"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
+    defaultValue: '{"MyObject": "MyVariable"}'
+    type: textarea
     secret: false
     optional: false
-OBJ_VAR_NODES:
-    label: 'Object and variable nodes as json string i.e., {"obj 1": ["var 1", "var n"], "obj 2": ["var 1"]}'
-    defaultValue: '{"obj 1": ["var 1", "var n"], "obj 2": ["var 1"]}'
-    type: text
+CB_TOPIC:
+    label: 'Crossbar Topic'
+    defaultValue: 're.opcua.client'
+    type: 'text'
     secret: false
     optional: false
-WRITE_TO_PIPE:
-    label: 'Pipe name to which OPC Client data must be written'
-    defaultValue: datafile
-    type: text
+PUBLISH_INTERVAL:
+    label: 'Publish interval in seconds'
+    defaultValue: 3
+    type: 'number'
     secret: false
     optional: false
