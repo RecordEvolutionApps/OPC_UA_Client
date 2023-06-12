@@ -21,15 +21,26 @@ Parameter | Meaning | Default
 --- | --- | ---
 OPCUA_URL      | IP address of OPC UA Server for OPC UA Client to listen to | opc.tcp://0.0.0.0:4840/freeopcua/server/
 OPCUA_NAMESPACE    | Namespace under which OPC UA Server is registered          | http://examples.freeopcua.github.io
-OPCUA_VARIABLES        | Object and Variable names which should be read & published     |  '{"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
+OPCUA_VARIABLES        | Object and Variable names which should be read & published     |  '{"MyObject": "MyVariable"}'
 CB_TOPIC      | publish to this crossbar topic                         |  re.opcua.client
 PUBLISH_INTERVAL       | read and publish every x seconds                                     |  3
+
+
+## OPCUA Variables
+
+In order to define, which variables should be read and published, you can specify a json string.
+The json string can contain multiple OPCUA Object names. Each Object can contain 1 order more Variables:
+
+
+```json
+{"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}
+```
 
 
 ---
 
 # For Developers
-To develop and build the app we are creating a Docker image that can be run on the device. Please check this git repository ([OPCUA Python Library](https://github.com/FreeOpcUa/python-opcua)) to find detailed information about the ***python opcua*** library and some other use cases.
+To develop and build the app we are creating a Docker image that can be run on the device. Please check this git repository ([OPCUA Python Library](https://github.com/FreeOpcUa/opcua-asyncio)) to find detailed information about the ***python opcua*** library and some other use cases.
 
 
 
