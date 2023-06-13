@@ -14,7 +14,7 @@ OPCUA_URL:
     type: text
     secret: false
     optional: false
-LISTEN_NAMESPACE:
+OPCUA_NAMESPACE:
     defaultValue: 'http://examples.freeopcua.github.io' # OPTIONAL | Default value. (string | number)
     description: 'Namespace of OPC Server' # OPTIONAL | Description. (string)
     label: Namespace of OPC Server' # REQUIRED | Label displayed above the input field. (string)
