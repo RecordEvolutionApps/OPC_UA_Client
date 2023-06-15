@@ -10,19 +10,20 @@
 OPCUA_URL:
     defaultValue: 'opc.tcp://localhost:4840/freeopcua/server/'
     description: 'Connects to the given OPCUA Server url'
-    label: 'OPCUA Server url'
+    label: 'OPC UA Server url'
     type: text
     secret: false
     optional: false
 OPCUA_NAMESPACE:
     defaultValue: 'http://examples.freeopcua.github.io' # OPTIONAL | Default value. (string | number)
-    description: 'Namespace of OPC Server' # OPTIONAL | Description. (string)
-    label: Namespace of OPC Server' # REQUIRED | Label displayed above the input field. (string)
+    description: 'Namespace of OPC UA Server' # OPTIONAL | Description. (string)
+    label: Namespace of OPC UA Server' # REQUIRED | Label displayed above the input field. (string)
     type: 'text' # REQUIRED | Type of value. ('numeric' | 'text' | 'boolean')
     secret: false # OPTIONAL | Makes value invisible once set. (boolean)
     optional: false # OPTIONAL | Optional or required. (boolean)
 OPCUA_VARIABLES:
-    label: 'Json String of OPCUA Object & Variable names i.e., {"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
+    label: 'Json String of OPC UA Object & Variable names'
+    label: 'e.g. {"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
     defaultValue: '{"MyObject": "MyVariable"}'
     type: textarea
     secret: false
