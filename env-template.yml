@@ -23,7 +23,7 @@ OPCUA_NAMESPACE:
     optional: false # OPTIONAL | Optional or required. (boolean)
 OPCUA_VARIABLES:
     label: 'Json String of OPC UA Object & Variable names'
-    label: 'e.g. {"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
+    description: 'e.g. {"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
     defaultValue: '{"MyObject": "MyVariable"}'
     type: textarea
     secret: false
