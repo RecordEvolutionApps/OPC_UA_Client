@@ -1,0 +1,26 @@
+data:
+  tables:
+    - tablename: opcuadata
+      chunkTimeInterval: 1 hour
+      dropAfter: 2 hour
+      columns:
+        - id: tsp
+          name: Timestamp
+          description: Timestamp of Measurement
+          path: args[0].tsp
+          dataType: timestamp
+        - id: namespace
+          name: Namespace
+          description: OPCUA Namespace
+          path: args[0].namespace
+          dataType: string
+        - id: variable
+          name: Variable
+          description: OPCUA Variable Name
+          path: args[0].variable
+          dataType: string
+        - id: value
+          name: Value
+          description: OPCUA Variable Value
+          path: args[0].value
+          dataType: numeric

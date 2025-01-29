@@ -1,0 +1,73 @@
+name: OPC_UA_Client
+widgets:
+  - package_name: widget-gauge
+    chartconfig:
+      settings: {}
+      dataseries:
+        - label: $str:Temperature
+          unit: $str:°C
+          valueColor: $str:black
+          data:
+            tableRef:
+              tablename: opcuadata
+              queryParams:
+                limit: 500
+              format:
+                value: value
+                tsp: tsp
+                pivot: variable
+          sections:
+            sectionLimits:
+              - $num:-20
+              - $num:80
+              - $num:90
+              - $num:120
+            backgroundColors:
+              - $str:#AAC8A7
+              - $str:#F1C27B
+              - $str:#FF9B9B
+          advanced:
+            averageLatest: $num:1
+    version: 1.6.9
+    layout_id: 1
+  - package_name: widget-linechart
+    chartconfig:
+      axis:
+        timeseries: $bool:true
+        xAxisLabel: $str:Time
+        yAxisLabel: $str:Temperature
+      dataseries:
+        - label: $str:Demo Line
+          type: $str:line
+          styling:
+            borderWidth: $num:2
+            borderDash: $str:5, 5
+            radius: $num:0
+            pointStyle: $str:rectRounded
+          backgroundColor: $str:#AFF6F9
+          borderColor: $str:#47BBF5bb
+          advanced:
+            drawOrder: $num:3
+          data:
+            tableRef:
+              tablename: opcuadata
+              queryParams:
+                limit: 500
+              format:
+                x: tsp
+                y: value
+                r: $num:1
+                pivot: variable
+    version: 1.5.5
+    layout_id: 2
+layout:
+  - w: 12
+    h: 4
+    x: 0
+    y: 0
+    id: 2
+  - w: 12
+    h: 4
+    x: 0
+    y: 4
+    id: 1

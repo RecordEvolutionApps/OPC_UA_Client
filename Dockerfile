@@ -13,7 +13,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 COPY requirements.txt ./
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY opc_ua_client.py ./
 

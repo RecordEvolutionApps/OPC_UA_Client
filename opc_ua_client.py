@@ -1,18 +1,17 @@
 import json
 import os
+from datetime import datetime
 from asyncio import sleep
 from asyncio.events import get_event_loop
 from asyncua import Client
-from reswarm import Reswarm
+from ironflock import IronFlock
 
-
-OPCUA_URL = os.environ.get("OPCUA_URL", "opc.tcp://localhost:4840/freeopcua/server/")
-OPCUA_NAMESPACE = os.environ.get("OPCUA_NAMESPACE", "http://examples.freeopcua.github.io")
-OPCUA_VARIABLES = os.environ.get("OPCUA_VARIABLES", '{"MyObject": "MyVariable"}')
-CB_TOPIC = os.environ.get("CB_TOPIC", "re.opcua.client")
+OPCUA_URL = os.environ.get("OPCUA_URL", "opc.tcp://localhost:4840/opcuaserver")
+OPCUA_NAMESPACE = os.environ.get("OPCUA_NAMESPACE", "example:ironflock:com")
+OPCUA_VARIABLES = os.environ.get("OPCUA_VARIABLES", '{"Tank": "Temperature"}')
 PUBLISH_INTERVAL = int(os.environ.get("PUBLISH_INTERVAL", 3))
 
-
+rw = IronFlock()
 
 class OpcuaClient:
     _client = None
@@ -81,18 +80,27 @@ class OpcuaClient:
             self._client = None
             raise e
 
+def resultToPayload(data):
+    tsp = datetime.now().astimezone().isoformat()
+    result = [
+        {"tsp": tsp, "variable": key, "value": val}
+        for key, values in data.items()
+        for val in (values if isinstance(values, list) else [values])
+    ]
+    return result
+
 
 async def main():
-    rw = Reswarm()
-
     opcua_client = OpcuaClient(OPCUA_URL, OPCUA_NAMESPACE)
 
     while True:
         try:
-            value = await opcua_client.read_variables(json.loads(OPCUA_VARIABLES))
-            print(f"Value read {value}")
-            result = await rw.publish(CB_TOPIC, value)
-            print(result)
+            data = await opcua_client.read_variables(json.loads(OPCUA_VARIABLES))
+            print(f"Value read {data}")
+            payload = resultToPayload(data)
+            print("publish payload", payload)
+            for item in payload:
+                await rw.publish_to_table('opcuadata', item)
         except Exception as e:
             print("could not get variable")
             print(e)
@@ -101,4 +109,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    get_event_loop().run_until_complete(main())
+    # run the main coroutine
+    get_event_loop().create_task(main())
+    # run the ironflock component
+    rw.run()

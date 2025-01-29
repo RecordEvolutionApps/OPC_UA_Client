@@ -8,35 +8,28 @@
 # NOTE: 'OPTIONAL' values can be left out
 
 OPCUA_URL:
-    defaultValue: 'opc.tcp://localhost:4840/freeopcua/server/'
+    defaultValue: 'opc.tcp://localhost:4840/opcuaserver'
     description: 'Connects to the given OPCUA Server url'
-    label: 'OPC UA Server url'
+    label: 'OPCUA Server url'
     type: text
     secret: false
     optional: false
 OPCUA_NAMESPACE:
-    defaultValue: 'http://examples.freeopcua.github.io' # OPTIONAL | Default value. (string | number)
+    defaultValue: 'example:ironflock:com' # OPTIONAL | Default value. (string | number)
     description: 'Namespace of OPC UA Server' # OPTIONAL | Description. (string)
     label: Namespace of OPC UA Server' # REQUIRED | Label displayed above the input field. (string)
     type: 'text' # REQUIRED | Type of value. ('numeric' | 'text' | 'boolean')
     secret: false # OPTIONAL | Makes value invisible once set. (boolean)
     optional: false # OPTIONAL | Optional or required. (boolean)
 OPCUA_VARIABLES:
-    label: 'Json String of OPC UA Object & Variable names'
-    description: 'e.g. {"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
-    defaultValue: '{"MyObject": "MyVariable"}'
+    label: 'Json String of OPCUA Object & Variable names i.e., {"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
+    defaultValue: '{"Tank": "Temperature"}'
     type: textarea
-    secret: false
-    optional: false
-CB_TOPIC:
-    label: 'Crossbar Topic'
-    defaultValue: 're.opcua.client'
-    type: 'text'
     secret: false
     optional: false
 PUBLISH_INTERVAL:
     label: 'Publish interval in seconds'
-    defaultValue: 3
+    defaultValue: 2
     type: 'number'
     secret: false
     optional: false
