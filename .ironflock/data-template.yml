@@ -24,3 +24,8 @@ data:
           description: OPCUA Variable Value
           path: args[0].value
           dataType: numeric
+        - id: devname
+          name: Device Name
+          description: Name of Device
+          path: kwargs.DEVICE_NAME
+          dataType: string
