@@ -15,8 +15,8 @@ COPY requirements.txt ./
 
 RUN pip install -r requirements.txt
 
-COPY opc_ua_client.py ./
+COPY . ./
 
-CMD python3 -u opc_ua_client.py
+CMD python3 -u main.py
 
 

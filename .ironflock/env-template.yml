@@ -22,8 +22,8 @@ OPCUA_NAMESPACE:
     secret: false # OPTIONAL | Makes value invisible once set. (boolean)
     optional: false # OPTIONAL | Optional or required. (boolean)
 OPCUA_VARIABLES:
-    label: 'Json String of OPCUA Object & Variable names i.e., {"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}'
-    defaultValue: '{"Tank": "Temperature"}'
+    label: JSON subtree structure containing only the part of the server's OPCUA schema that should be extracted
+    defaultValue: '{"Tank": "Temperature", "Machine": {"Status": "Voltage"}}'
     type: textarea
     secret: false
     optional: false

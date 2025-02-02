@@ -4,8 +4,8 @@ widgets:
     chartconfig:
       settings: {}
       dataseries:
-        - label: $str:Temperature
-          unit: $str:°C
+        - label: $str:Value
+          unit: "$str:"
           valueColor: $str:black
           data:
             tableRef:
