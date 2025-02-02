@@ -22,16 +22,21 @@ Parameter | Meaning | Default
 --- | --- | ---
 OPCUA_URL      | IP address of OPC UA Server for OPC UA Client to listen to | opc.tcp://0.0.0.0:4840/opcuaserver
 OPCUA_NAMESPACE    | Namespace under which OPC UA Server is registered          | example:ironflock:com
-OPCUA_VARIABLES        | Object and Variable names which should be read & published     |  '{"Tank": "Temperature"}'
-PUBLISH_INTERVAL       | read and publish every x seconds                                     |  3
+OPCUA_VARIABLES        | OPC UA schema that should be extracted and stored     |  {"Tank": "Temperature", "Machine": {"Status": "Voltage"}}
+PUBLISH_INTERVAL       | read every x seconds                                     |  2
 
-## OPCUA Variables
+## OPCUA Value Extraction
 
 In order to define, which variables should be read and published, you can specify a json string.
-The json string can contain multiple OPCUA Object names. Each Object can contain 1 order more Variables:
+The json string should be a subtree of the OPCUA schema tree, that is offered by the connected OPCUA server.
 
 ```json
-{"object1": ["MyVariable1", "MyVariable2"], "obj2": ["var1"], "obj3": "somevar"}
+{
+    "Tank": "Temperature", 
+    "Machine": {
+        "Status": "Voltage"
+        }
+}
 ```
 
 ---
