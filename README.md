@@ -3,7 +3,9 @@
 The app acts as an OPC UA Client and fetches data from any machine providing a OPC UA interface.
 You can specify which data points to read and these are then collected in a structured way in your fleet database.
 
-![screenshot](https://storage.googleapis.com/reswarm-images/OPCUA_collector_screenshot.png)
+<div style="display: flex; justify-content: center;">
+    <img src="https://storage.googleapis.com/reswarm-images/OPCUA_collector_screenshot3.webp" width="600px">
+</div>
 
 ## Hardware
 
