@@ -3,6 +3,8 @@
 The app acts as an OPC UA Client and fetches data from any machine providing a OPC UA interface.
 You can specify which data points to read and these are then collected in a structured way in your fleet database.
 
+![screenshot](https://storage.googleapis.com/reswarm-images/OPCUA_collector_screenshot.png)
+
 ## Hardware
 
 - (Industrial) PC registered in IronFlock ([For Details on registering devices click here](https://docs.ironflock.com/#/en/Reswarm/reflasher))
