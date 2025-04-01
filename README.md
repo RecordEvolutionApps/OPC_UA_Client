@@ -1,20 +1,18 @@
-# OPC UA Client
+# Collect data from any OPC UA server
 
-The app acts as an OPC UA Client and fetches data from user specified objects and variable nodes.
-The variables read are then published to the IronFlock platform.
+The app acts as an OPC UA Client and fetches data from any machine providing a OPC UA interface.
+You can specify which data points to read and these are then collected in a structured way in your fleet database.
 
 ## Hardware
 
-1. Industrial PC registered in IronFlock ([For Detail Click Here](https://docs.ironflock.com/#/en/Reswarm/reflasher))
+- (Industrial) PC registered in IronFlock ([For Details on registering devices click here](https://docs.ironflock.com/#/en/Reswarm/reflasher))
+- Any modbus server on the same network as the industrial PC.
 
 ## Usage Instructions
 
-The Industrial PC does need a working Wi-Fi connection, so you can control it remotely using the IronFlock Platform. The app tries to connect to an OPC UA Server at ***opc.tcp://0.0.0.0:4840/opcuaserver*** by default.
-
-## Install the App
-
-To use the app on your Industrial PC, go to IronFlock into the devices menu of the swarm where your device is registred.
-There create a group and add the device to the group and install this app to this group as well. Now the device will start downloading the app.
+For setup the edge PC needs a working internet connection, so you can configure it remotely using the IronFlock Platform.
+Find your PC in the devices menu, go to the IoT Store and install this app.
+You can open the device settings, go the settings of this app and configure it as detailed below:
 
 ## Parameters
 
@@ -22,7 +20,7 @@ Parameter | Meaning | Default
 --- | --- | ---
 OPCUA_URL      | IP address of OPC UA Server for OPC UA Client to listen to | opc.tcp://0.0.0.0:4840/opcuaserver
 OPCUA_NAMESPACE    | Namespace under which OPC UA Server is registered          | example:ironflock:com
-OPCUA_VARIABLES        | OPC UA schema that should be extracted and stored     |  {"Tank": "Temperature", "Machine": {"Status": "Voltage"}}
+OPCUA_VARIABLES        | OPC UA (sub)schema that should be extracted and stored     |  {"Tank": "Temperature", "Machine": {"Status": "Voltage"}}
 PUBLISH_INTERVAL       | read every x seconds                                     |  2
 
 ## OPCUA Value Extraction
@@ -39,8 +37,41 @@ The json string should be a subtree of the OPCUA schema tree, that is offered by
 }
 ```
 
+## Data Table Format
+
+The data collected from the OPC UA machine will be stored in the following structure in your fleet database.
+You can use this data in any custom dashboard created in your fleet.
+
+```yaml
+  - id: tsp
+    name: Timestamp
+    description: Timestamp of Measurement
+    dataType: timestamp
+  - id: namespace
+    name: Namespace
+    description: OPCUA Namespace
+    dataType: string
+  - id: variable
+    name: Variable
+    description: OPCUA Variable Name
+    dataType: string
+  - id: value
+    name: Value
+    description: OPCUA Variable Value
+    dataType: numeric
+  - id: devname
+    name: Device Name
+    description: Name of Edge PC
+    dataType: string
+```
+
 ---
 
 ## For Developers
 
 To develop and build the app we are creating a Docker image that can be run on the device. Please check this git repository ([OPCUA Python Library](https://github.com/FreeOpcUa/opcua-asyncio)) to find detailed information about the ***python opcua*** library and some other use cases.
+
+## License
+
+Copyright 2025 Record Evolution GmbH
+All rights reserved
