@@ -4,31 +4,63 @@ widgets:
     chartconfig:
       settings: {}
       dataseries:
-        - label: $str:Value
-          unit: "$str:"
+        - label: $str:Machine Voltage
+          unit: $str:V
           valueColor: $str:black
           data:
             tableRef:
               tablename: opcuadata
               queryParams:
-                limit: 500
+                limit: 5
+                filterAnd:
+                  - column: variable
+                    operator: =
+                    value: Machine.Status.Voltage
+                windowLength: 5
+                nowMinusPeriods: 0
               format:
                 value: value
                 tsp: tsp
-                pivot: variable
           sections:
             sectionLimits:
-              - $num:-20
-              - $num:80
-              - $num:90
-              - $num:120
+              - $num:0
+              - $num:240
+              - $num:260
+              - $num:300
             backgroundColors:
               - $str:#AAC8A7
               - $str:#F1C27B
               - $str:#FF9B9B
           advanced:
             averageLatest: $num:1
-    version: 1.6.9
+        - label: $str:Tank Temperature
+          valueColor: $str:green
+          unit: $str:°C
+          data:
+            tableRef:
+              tablename: opcuadata
+              queryParams:
+                limit: 5
+                filterAnd:
+                  - column: variable
+                    operator: =
+                    value: Tank.Temperature
+                windowLength: 5
+                nowMinusPeriods: 0
+              format:
+                value: value
+                tsp: tsp
+          sections:
+            sectionLimits:
+              - $num:-10
+              - $num:0
+              - $num:80
+              - $num:100
+            backgroundColors:
+              - $str:#039be5
+              - $str:#43a047
+              - $str:#c62828
+    version: 1.6.10
     layout_id: 1
   - package_name: widget-linechart
     chartconfig:
