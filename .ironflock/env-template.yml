@@ -8,17 +8,17 @@
 # NOTE: 'OPTIONAL' values can be left out
 
 OPCUA_URL:
-    defaultValue: 'opc.tcp://localhost:4840/opcuaserver'
-    description: 'Connects to the given OPCUA Server url'
-    label: 'OPCUA Server url'
+    label: OPCUA Server url
+    defaultValue: opc.tcp://localhost:4840/opcuaserver
+    description: Connects to the given OPCUA Server url
     type: text
     secret: false
     optional: false
 OPCUA_NAMESPACE:
-    defaultValue: 'example:ironflock:com' # OPTIONAL | Default value. (string | number)
-    description: 'Namespace of OPC UA Server' # OPTIONAL | Description. (string)
+    defaultValue: example:ironflock:com # OPTIONAL | Default value. (string | number)
+    description: Namespace of OPC UA Server # OPTIONAL | Description. (string)
     label: Namespace of OPC UA Server' # REQUIRED | Label displayed above the input field. (string)
-    type: 'text' # REQUIRED | Type of value. ('numeric' | 'text' | 'boolean')
+    type: text # REQUIRED | Type of value. ('numeric' | 'text' | 'boolean')
     secret: false # OPTIONAL | Makes value invisible once set. (boolean)
     optional: false # OPTIONAL | Optional or required. (boolean)
 OPCUA_VARIABLES:
@@ -28,8 +28,14 @@ OPCUA_VARIABLES:
     secret: false
     optional: false
 PUBLISH_INTERVAL:
-    label: 'Publish interval in seconds'
+    label: Publish interval in seconds
     defaultValue: 2
-    type: 'number'
+    type: number
     secret: false
     optional: false
+MACHINE_NAME:
+    label: Machine Name
+    description: The value you enter here will be stored as machine_name alongside with the extracted data.
+    defaultValue: 
+    type: text
+    optional: true

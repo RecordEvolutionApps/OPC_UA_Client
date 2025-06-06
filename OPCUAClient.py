@@ -40,7 +40,7 @@ class OPCUAClient:
             
             # Fetch the node dynamically
             node = await self.client.nodes.root.get_child(node_path)
-            print(f"Resolved Path {' → '.join(path_parts)} -> {node.nodeid}")
+            # print(f"Resolved Path {' → '.join(path_parts)} -> {node.nodeid}")
             return node
         except Exception as e:
             print(f"Failed to resolve path {' → '.join(path_parts)}: {e}")
@@ -49,7 +49,7 @@ class OPCUAClient:
     async def extract_leaf_nodes(self, schema, parent_path_parts=None):
         """
         Recursively extract OPC UA variable node paths and dynamically resolve nodes.
-        Returns a list of (full_path, node_id, original_schema_reference) tuples.
+        Returns a list of (full_opcua_path_string, node_id, schema_parent_path, schema_key_for_variable, opcua_variable_name) tuples.
         """
         if parent_path_parts is None:
             parent_path_parts = []
@@ -57,57 +57,66 @@ class OPCUAClient:
         leaf_nodes_info = []
         
         for key, value in schema.items():
-            current_path_parts = parent_path_parts + [key]
+            # This 'key' is the one we want to keep in the final output, e.g., "Tank" or "Status"
+            current_schema_key = key 
+            current_schema_parent_path = parent_path_parts # The path to the parent of 'current_schema_key'
 
             if isinstance(value, dict):
                 # If it's a subtree, recurse and extend the list
-                leaf_nodes_info.extend(await self.extract_leaf_nodes(value, current_path_parts))
+                leaf_nodes_info.extend(await self.extract_leaf_nodes(value, parent_path_parts + [current_schema_key]))
             else:
-                variable_path_parts = current_path_parts + [value]
-                node = await self.resolve_node_by_full_path(variable_path_parts)
+                # 'value' is the OPC UA variable name (e.g., "Temperature", "Voltage")
+                opcua_variable_name = value 
+                
+                # The full path to the OPC UA node includes the schema path and the OPC UA variable name
+                # E.g., if schema_path is ['Tank'] and opcua_variable_name is 'Temperature', OPC UA path might be ['Tank', 'Temperature']
+                opcua_full_path_parts = parent_path_parts + [current_schema_key, opcua_variable_name]
+                
+                node = await self.resolve_node_by_full_path(opcua_full_path_parts)
                 if node:
                     node_id = node.nodeid
-                    full_path = ".".join(variable_path_parts)
-                    print(f"Resolved {full_path} -> {node_id}")
-                    # Store a reference to where this value should go in the original schema
-                    leaf_nodes_info.append((full_path, node_id, current_path_parts, value))
+                    full_opcua_path_string = ".".join(opcua_full_path_parts)
+                    # print(f"Resolved {full_opcua_path_string} -> {node_id}")
+                    # Store (OPC UA full path string, NodeId, parent path in original schema, key for this variable, actual OPC UA variable name)
+                    leaf_nodes_info.append((full_opcua_path_string, node_id, current_schema_parent_path, current_schema_key, opcua_variable_name))
                 else:
-                    print(f"Warning: Could not resolve {'.'.join(variable_path_parts)} to a node ID.")
+                    print(f"Warning: Could not resolve {'.'.join(opcua_full_path_parts)} to a node ID.")
             
         return leaf_nodes_info
 
     async def read_from_schema(self, schema):
         """
         Extract and read data from OPC UA server based on JSON schema,
-        retaining the original tree structure.
+        retaining the original tree structure and populating with values.
 
         :param schema: JSON-like dictionary defining the OPC UA structure.
         :return: Dictionary with timestamp and the schema populated with values.
         """
-        print('Reading from schema:', schema)
+        # print('Reading from schema:', schema)
         tsp = datetime.now().astimezone().isoformat()
 
         # Create a deep copy of the schema to populate with values
         populated_schema = self._deep_copy_schema(schema)
 
         # Extract leaf nodes and their original path references
+        # leaf_nodes_info will contain (full_opcua_path_string, node_id, schema_parent_path, schema_key_for_variable, opcua_variable_name) tuples.
         leaf_nodes_info = await self.extract_leaf_nodes(schema)
         if not leaf_nodes_info:
             print("No leaf nodes found.")
-            return {"tsp": tsp, "data": {}}
+            return {"tsp": tsp, "data": populated_schema} # Return schema with unresolved values if no nodes found
 
         # Prepare for bulk reading
         nodes_to_read = []
-        path_to_schema_ref = {}
+        node_id_to_schema_info = {}
 
-        for full_path, node_id, schema_path_parts, variable_name in leaf_nodes_info:
+        for full_opcua_path_string, node_id, schema_parent_path, schema_key_for_variable, opcua_variable_name in leaf_nodes_info:
             nodes_to_read.append(self.client.get_node(node_id))
             # Store a reference back to the exact location in the populated_schema
-            path_to_schema_ref[str(node_id)] = (schema_path_parts, variable_name)
+            node_id_to_schema_info[str(node_id)] = (schema_parent_path, schema_key_for_variable, opcua_variable_name)
 
         if not nodes_to_read:
             print("No nodes to read after resolution.")
-            return {"tsp": tsp, "data": populated_schema} # Return schema with unresolved values if no nodes found
+            return {"tsp": tsp, "data": populated_schema}
 
         # Read values from nodes
         values = await self.client.read_values(nodes_to_read)
@@ -115,58 +124,32 @@ class OPCUAClient:
         # Populate the schema with the read values
         for i, node in enumerate(nodes_to_read):
             node_id_str = str(node.nodeid)
-            if node_id_str in path_to_schema_ref:
-                schema_path_parts, variable_name = path_to_schema_ref[node_id_str]
+            if node_id_str in node_id_to_schema_info:
+                schema_parent_path, schema_key_for_variable, opcua_variable_name = node_id_to_schema_info[node_id_str]
+                read_value = values[i]
+
                 current_level = populated_schema
-                # Traverse the populated_schema to the correct location
-                for part in schema_path_parts[:-1]:  # Exclude the last part which is the variable key itself
-                    current_level = current_level.get(part, {})
-                # Assign the value
-                if schema_path_parts and schema_path_parts[-1] in current_level:
-                    current_level[schema_path_parts[-1]] = values[i]
-                else:
-                    # This case handles direct assignment if the schema part is the variable name
-                    # or if the variable name is the last key in the path_parts
-                    # It's a bit tricky because the original schema has the variable name
-                    # as the VALUE of the last key, not the key itself.
-                    # We need to find the key whose value is `variable_name`
-                    # For example, if schema_path_parts is ['Device1', 'Temperature'] and variable_name is 'Value'
-                    # We need to set Device1['Temperature'] to the value.
-                    # This implies we need to find the KEY in the original schema
-                    # whose VALUE was `variable_name`.
-                    # The `extract_leaf_nodes` currently returns `current_path_parts` and `value`.
-                    # `current_path_parts` includes the key for the variable.
-                    # So, if schema_path_parts is ['Device1', 'SensorA'], and value is 'TemperatureValue',
-                    # and the original schema was {'Device1': {'SensorA': 'TemperatureValue'}}.
-                    # We want populated_schema['Device1']['SensorA'] = actual_value.
+                # Traverse to the parent dictionary where the 'schema_key_for_variable' resides
+                for part_key in schema_parent_path:
+                    current_level = current_level.get(part_key)
 
-                    # Let's adjust the way we store the reference back to the schema
-                    # In leaf_nodes_info, we store (full_path, node_id, current_path_parts, value_in_schema)
-                    # current_path_parts is ['Device1', 'SensorA']
-                    # value_in_schema is 'TemperatureValue'
-                    # We need to modify the dictionary at populated_schema['Device1']['SensorA']
-
-                    # Correct logic for assigning value:
-                    temp_node = populated_schema
-                    for part_idx, part in enumerate(schema_path_parts):
-                        if part_idx == len(schema_path_parts) - 1:
-                            # This is the key in the populated_schema that we want to update
-                            # It corresponds to the 'key' in the original schema: 'SensorA' in our example
-                            temp_node[part] = values[i]
-                        else:
-                            temp_node = temp_node.get(part, {})
-
+                # Now, at 'current_level', 'schema_key_for_variable' (e.g., "Tank" or "Status")
+                # is the key we want to update.
+                # The value for this key should be a new dictionary like {"Temperature": 23.33}
+                current_level[schema_key_for_variable] = {opcua_variable_name: read_value}
 
         return {"tsp": tsp, "data": populated_schema}
 
     def _deep_copy_schema(self, schema):
-        """Recursively deep copies the schema structure."""
+        """Recursively deep copies the schema structure, preparing for population."""
         if isinstance(schema, dict):
             return {k: self._deep_copy_schema(v) for k, v in schema.items()}
         elif isinstance(schema, list):
             return [self._deep_copy_schema(elem) for elem in schema]
         else:
-            return None # We will replace this with the actual value
+            # For leaf nodes (strings representing variable names),
+            # we just return None initially. This will be overwritten with a dict.
+            return None
 
     async def print_all_nodes(self):
         """Print all nodes under the Objects folder."""

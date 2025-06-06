@@ -11,16 +11,11 @@ widgets:
             tableRef:
               tablename: opcuadata
               queryParams:
-                limit: 5
-                filterAnd:
-                  - column: variable
-                    operator: =
-                    value: Machine.Status.Voltage
-                windowLength: 5
-                nowMinusPeriods: 0
+                limit: 500
               format:
-                value: value
+                value: data.Machine.Status.Voltage
                 tsp: tsp
+                pivot: machine_name
           sections:
             sectionLimits:
               - $num:0
@@ -40,16 +35,11 @@ widgets:
             tableRef:
               tablename: opcuadata
               queryParams:
-                limit: 5
-                filterAnd:
-                  - column: variable
-                    operator: =
-                    value: Tank.Temperature
-                windowLength: 5
-                nowMinusPeriods: 0
+                limit: 500
               format:
-                value: value
+                value: data.Tank.Temperature
                 tsp: tsp
+                pivot: machine_name
           sections:
             sectionLimits:
               - $num:-10
@@ -69,7 +59,7 @@ widgets:
         xAxisLabel: $str:Time
         yAxisLabel: $str:Temperature
       dataseries:
-        - label: $str:Demo Line
+        - label: $str:Tank Temperature
           type: $str:line
           styling:
             borderWidth: $num:2
@@ -80,6 +70,7 @@ widgets:
           borderColor: $str:#47BBF5bb
           advanced:
             drawOrder: $num:3
+            chartName: $str:t
           data:
             tableRef:
               tablename: opcuadata
@@ -87,9 +78,24 @@ widgets:
                 limit: 500
               format:
                 x: tsp
-                y: value
-                r: $num:1
-                pivot: variable
+                y: data.Tank.Temperature
+                r: $num:10
+                pivot: devname
+        - label: $str:Voltage
+          backgroundColor: $str:#F5D7BB
+          borderColor: $str:#F9A076
+          data:
+            tableRef:
+              tablename: opcuadata
+              queryParams:
+                limit: 500
+                windowLength: 5
+                nowMinusPeriods: 0
+              format:
+                x: tsp
+                y: data.Machine.Status.Voltage
+                pivot: devname
+          type: $str:line
     version: 1.5.5
     layout_id: 2
 layout:

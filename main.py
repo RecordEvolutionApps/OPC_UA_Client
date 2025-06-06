@@ -9,6 +9,7 @@ OPCUA_URL = os.environ.get("OPCUA_URL", "opc.tcp://localhost:4840/opcuaserver")
 OPCUA_NAMESPACE = os.environ.get("OPCUA_NAMESPACE", "example:ironflock:com")
 OPCUA_VARIABLES = os.environ.get("OPCUA_VARIABLES", '{"Tank": "Temperature"}')
 PUBLISH_INTERVAL = int(os.environ.get("PUBLISH_INTERVAL", 3))
+MACHINE_NAME = os.environ.get("MACHINE_NAME")
 
 
 async def main():
@@ -20,7 +21,7 @@ async def main():
         # try:
         data = await opcua_client.read_from_schema(json.loads(OPCUA_VARIABLES))
         print(f"Value read {data}")
-        await ironflock.publish_to_table('opcuadata', OPCUA_NAMESPACE, data)
+        await ironflock.publish_to_table('opcuadata', OPCUA_NAMESPACE, MACHINE_NAME, data)
         # except Exception as e:
         #     print("could not get variable")
         #     print(e)
