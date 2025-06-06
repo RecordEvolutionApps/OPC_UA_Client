@@ -46,10 +46,10 @@ widgets:
                 pivot: machine_name
           sections:
             sectionLimits:
-              - $num:-10
               - $num:0
-              - $num:80
-              - $num:100
+              - $num:1000
+              - $num:3000
+              - $num:4000
             backgroundColors:
               - $str:#039be5
               - $str:#43a047
