@@ -7,23 +7,18 @@ data:
         - id: tsp
           name: Timestamp
           description: Timestamp of Measurement
-          path: args[0].tsp
+          path: args[1].tsp
           dataType: timestamp
         - id: namespace
           name: Namespace
           description: OPCUA Namespace
-          path: args[0].namespace
+          path: args[0]
           dataType: string
-        - id: variable
-          name: Variable
-          description: OPCUA Variable Name
-          path: args[0].variable
-          dataType: string
-        - id: value
-          name: Value
-          description: OPCUA Variable Value
-          path: args[0].value
-          dataType: numeric
+        - id: data
+          name: Data
+          description: OPCUA Data
+          path: args[1].data
+          dataType: json
         - id: devname
           name: Device Name
           description: Name of Device
