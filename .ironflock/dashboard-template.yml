@@ -11,7 +11,9 @@ widgets:
             tableRef:
               tablename: opcuadata
               queryParams:
-                limit: 500
+                limit: 5
+                windowLength: 5
+                nowMinusPeriods: 0
               format:
                 value: data.Machine.Status.Voltage
                 tsp: tsp
@@ -27,7 +29,7 @@ widgets:
               - $str:#F1C27B
               - $str:#FF9B9B
           advanced:
-            averageLatest: $num:1
+            averageLatest: "$num:"
         - label: $str:Tank Temperature
           valueColor: $str:green
           unit: $str:°C
@@ -35,7 +37,9 @@ widgets:
             tableRef:
               tablename: opcuadata
               queryParams:
-                limit: 500
+                limit: 5
+                windowLength: 5
+                nowMinusPeriods: 0
               format:
                 value: data.Tank.Temperature
                 tsp: tsp
@@ -57,7 +61,8 @@ widgets:
       axis:
         timeseries: $bool:true
         xAxisLabel: $str:Time
-        yAxisLabel: $str:Temperature
+        yAxisLabel: "$str:"
+        columnLayout: $bool:true
       dataseries:
         - label: $str:Tank Temperature
           type: $str:line
