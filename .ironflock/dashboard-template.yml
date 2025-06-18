@@ -78,7 +78,13 @@ widgets:
             tableRef:
               tablename: opcuadata
               queryParams:
-                limit: 500
+                limit: 3000
+                windowPeriod: minute
+                windowLength: 5
+                nowMinusPeriods: 0
+                timeRange:
+                  - 2025-06-18T21:04:00.000Z
+                  - 2025-06-18T21:09:00.000Z
               format:
                 x: tsp
                 y: data.Tank.Temperature
@@ -89,9 +95,13 @@ widgets:
             tableRef:
               tablename: opcuadata
               queryParams:
-                limit: 500
+                limit: 3000
                 windowLength: 5
                 nowMinusPeriods: 0
+                windowPeriod: minute
+                timeRange:
+                  - 2025-06-18T21:04:00.000Z
+                  - 2025-06-18T21:09:00.000Z
               format:
                 x: tsp
                 y: data.Machine.Status.Voltage
