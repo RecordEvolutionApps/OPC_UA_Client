@@ -54,7 +54,7 @@ widgets:
               - $str:#039be5
               - $str:#43a047
               - $str:#c62828
-    version: 1.6.10
+    version: 1.7.4
     layout_id: 1
   - package_name: widget-linechart
     chartconfig:
@@ -71,8 +71,6 @@ widgets:
             borderDash: $str:5, 5
             radius: $num:0
             pointStyle: $str:rectRounded
-          backgroundColor: $str:#AFF6F9
-          borderColor: $str:#47BBF5bb
           advanced:
             drawOrder: $num:3
             chartName: $str:t
@@ -87,8 +85,6 @@ widgets:
                 r: $num:10
                 pivot: devname
         - label: $str:Voltage
-          backgroundColor: $str:#F5D7BB
-          borderColor: $str:#F9A076
           data:
             tableRef:
               tablename: opcuadata
@@ -101,7 +97,7 @@ widgets:
                 y: data.Machine.Status.Voltage
                 pivot: devname
           type: $str:line
-    version: 1.5.5
+    version: 1.6.8
     layout_id: 2
 layout:
   - w: 12
@@ -114,3 +110,10 @@ layout:
     x: 0
     y: 6
     id: 1
+style:
+  theme:
+    theme_name: shine
+  background_color: "#0000"
+  text_color: "#333"
+  tile_background_color: "#0000"
+  tile_border_color: "#ccc"
