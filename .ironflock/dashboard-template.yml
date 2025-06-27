@@ -6,7 +6,6 @@ widgets:
       dataseries:
         - label: $str:Machine Voltage
           unit: $str:V
-          valueColor: $str:black
           data:
             tableRef:
               tablename: opcuadata
@@ -24,14 +23,11 @@ widgets:
               - $num:240
               - $num:260
               - $num:300
-            backgroundColors:
-              - $str:#AAC8A7
-              - $str:#F1C27B
-              - $str:#FF9B9B
+            backgroundColors: []
           advanced:
             averageLatest: "$num:"
+          precision: $num:1
         - label: $str:Tank Temperature
-          valueColor: $str:green
           unit: $str:°C
           data:
             tableRef:
@@ -50,11 +46,8 @@ widgets:
               - $num:1000
               - $num:3000
               - $num:4000
-            backgroundColors:
-              - $str:#039be5
-              - $str:#43a047
-              - $str:#c62828
-    version: 1.7.4
+            backgroundColors: []
+    version: 1.7.10
     layout_id: 1
   - package_name: widget-linechart
     chartconfig:
@@ -107,7 +100,7 @@ widgets:
                 y: data.Machine.Status.Voltage
                 pivot: devname
           type: $str:line
-    version: 1.6.8
+    version: 1.6.15
     layout_id: 2
 layout:
   - w: 12
