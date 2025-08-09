@@ -47,7 +47,7 @@ widgets:
               - $num:3000
               - $num:4000
             backgroundColors: []
-    version: 1.7.10
+    version: 1.7.12
     layout_id: 1
   - package_name: widget-linechart
     chartconfig:
@@ -100,19 +100,19 @@ widgets:
                 y: data.Machine.Status.Voltage
                 pivot: devname
           type: $str:line
-    version: 1.6.15
+    version: 1.6.16
     layout_id: 2
 layout:
   - w: 12
-    h: 6
-    x: 0
-    y: 0
-    id: 2
-  - w: 12
     h: 4
     x: 0
-    y: 6
+    y: 0
     id: 1
+  - w: 12
+    h: 6
+    x: 0
+    y: 4
+    id: 2
 style:
   theme:
     theme_name: shine
