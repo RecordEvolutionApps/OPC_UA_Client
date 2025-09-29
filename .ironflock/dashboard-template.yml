@@ -34,7 +34,7 @@ widgets:
             tableRef:
               tablename: flatopcuadata
               queryParams:
-                limit: 5
+                limit: 1
                 filterAnd:
                   - column: machine_name
                     operator: =
@@ -49,6 +49,7 @@ widgets:
                 windowPeriod: null
                 windowLength: 5
                 nowMinusPeriods: 0
+                timeRange: null
               format:
                 tsp: tsp
                 value: value
@@ -75,6 +76,7 @@ widgets:
         xAxisLabel: $str:Time
         yAxisLabel: "$str:"
         columnLayout: $bool:true
+        yAxisScaling: $bool:false
       dataseries:
         - label:
             valueRef:
@@ -114,7 +116,7 @@ widgets:
             tableRef:
               tablename: flatopcuadata
               queryParams:
-                limit: 3000
+                limit: 200
                 filterAnd:
                   - column: machine_name
                     operator: =
@@ -127,11 +129,11 @@ widgets:
                     dataType: string
                     useRoute: true
                 windowPeriod: minute
-                windowLength: 5
+                windowLength: 15
                 nowMinusPeriods: 0
                 timeRange:
-                  - 2025-09-29T10:38:24.039Z
-                  - 2025-09-29T10:43:24.039Z
+                  - 2025-09-29T12:56:09.816Z
+                  - 2025-09-29T13:11:09.816Z
               format:
                 x: tsp
                 y: value
@@ -218,7 +220,7 @@ layout:
   gridLayout:
     - x: 0
       y: 0
-      w: 7
+      w: 10
       h: 48
       id: cc888b7b-d650-47d4-bbde-f875e0629fcc
   subRoutes:
@@ -226,10 +228,10 @@ layout:
       gridLayout:
         - x: 0
           y: 0
-          w: 7
+          w: 10
           h: 48
           id: cc888b7b-d650-47d4-bbde-f875e0629fcc
-        - x: 7
+        - x: 10
           y: 0
           w: 9
           h: 48
@@ -239,22 +241,22 @@ layout:
           gridLayout:
             - x: 0
               y: 0
-              w: 7
+              w: 10
               h: 48
               id: cc888b7b-d650-47d4-bbde-f875e0629fcc
-            - x: 7
+            - x: 10
               y: 0
               w: 9
               h: 48
               id: e43b2723-c273-495e-857a-ecabe80c8b91
-            - x: 16
+            - x: 19
               y: 0
-              w: 32
+              w: 29
               h: 15
               id: "1"
-            - x: 16
+            - x: 19
               y: 15
-              w: 32
+              w: 29
               h: 33
               id: "2"
 style:
