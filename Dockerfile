@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.12
 
 WORKDIR /usr/src/app
 
@@ -8,8 +8,8 @@ WORKDIR /usr/src/app
 RUN pip install --upgrade pip
 
 # install rust for building cryptography
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+# RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+# ENV PATH="/root/.cargo/bin:${PATH}"
 
 COPY requirements.txt ./
 

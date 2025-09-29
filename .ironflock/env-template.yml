@@ -36,6 +36,6 @@ PUBLISH_INTERVAL:
 MACHINE_NAME:
     label: Machine Name
     description: The value you enter here will be stored as machine_name alongside with the extracted data.
-    defaultValue: 
+    defaultValue: My OPCUA Machine
     type: text
     optional: true

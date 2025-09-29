@@ -29,3 +29,90 @@ data:
           description: Name of Device
           path: kwargs.DEVICE_NAME
           dataType: string
+
+    - tablename: flatopcuadata
+      chunkTimeInterval: 1 hour
+      dropAfter: 2 hour
+      columns:
+        - id: tsp
+          name: Timestamp
+          description: Timestamp of Measurement
+          path: args[2].tsp
+          dataType: timestamp
+        - id: namespace
+          name: Namespace
+          description: OPCUA Namespace
+          path: args[0]
+          dataType: string
+        - id: machine_name
+          name: Machine Name
+          description: Given Machine Name
+          path: args[1]
+          dataType: string
+        - id: leaf_path
+          name: Object Path
+          description: "Path to the leaf in the OPC UA data object"
+          path: args[2].variable
+          dataType: string
+        - id: value
+          name: Value
+          description: OPCUA Data Value
+          path: args[2].value
+          dataType: string
+        - id: devname
+          name: Device Name
+          description: Name of Device
+          path: kwargs.DEVICE_NAME
+          dataType: string
+
+    - tablename: opcua_flat_measures
+      chunkTimeInterval: 1 year
+      maintainLatestFlagFor: ['measure_name'] # (optional) This table will mark the latest row for each unique value in the 'machinename' column (in the special boolean column "latest_flag"). This is useful for semantic updates on entities (e.g. machines) in tables.
+      columns:
+        - id: tsp
+          name: Timestamp
+          description: Timestamp of data entry
+          dataType: timestamp
+        - id: measure_name
+          name: Full Measure Name
+          description: The full path to the value in the OPC UA data object
+          dataType: string
+        - id: machine_name
+          name: Machine Name
+          description: Given Machine Name
+          dataType: string
+        - id: devname
+          name: Device Name
+          description: Name of Device
+          path: kwargs.DEVICE_NAME
+          dataType: string
+        - id: deleted
+          name: Deleted
+          description: Marks a record as deleted
+          dataType: boolean
+
+    - tablename: devices
+      chunkTimeInterval: 1 year
+      maintainLatestFlagFor: ['devname'] # (optional) This table will mark the latest row for each unique value in the 'machinename' column (in the special boolean column "latest_flag"). This is useful for semantic updates on entities (e.g. machines) in tables.
+      columns:
+        - id: tsp
+          name: Timestamp
+          description: Timestamp of Measurement
+          dataType: timestamp
+        - id: machine_name
+          name: Machine Name
+          description: Given Machine Name
+          dataType: string
+        - id: url
+          name: Web Url
+          description: The remote access web url of the hosted grafana
+          dataType: string
+        - id: devname
+          name: Device Name
+          description: Name of Device
+          path: kwargs.DEVICE_NAME
+          dataType: string
+        - id: deleted
+          name: Deleted
+          description: Marks a record as deleted
+          dataType: boolean

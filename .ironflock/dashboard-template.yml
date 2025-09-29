@@ -4,19 +4,55 @@ widgets:
     chartconfig:
       settings: {}
       dataseries:
-        - label: $str:Machine Voltage
-          unit: $str:V
+        - label:
+            valueRef:
+              tablename: opcua_flat_measures
+              column: measure_name
+              queryParams:
+                filterAnd:
+                  - column: machine_name
+                    operator: =
+                    value: "1"
+                    dataType: string
+                    useRoute: true
+                  - column: measure_name
+                    operator: =
+                    value: "2"
+                    dataType: string
+                    useRoute: true
+                  - column: latest_flag
+                    operator: =
+                    value: "true"
+                    dataType: boolean
+                  - column: deleted
+                    operator: =
+                    value: "false"
+                    dataType: boolean
+                limit: 1
+          unit: "$str:"
           data:
             tableRef:
-              tablename: opcuadata
+              tablename: flatopcuadata
               queryParams:
                 limit: 5
+                filterAnd:
+                  - column: machine_name
+                    operator: =
+                    value: "1"
+                    dataType: string
+                    useRoute: true
+                  - column: leaf_path
+                    operator: =
+                    value: "2"
+                    dataType: string
+                    useRoute: true
+                windowPeriod: null
                 windowLength: 5
                 nowMinusPeriods: 0
               format:
-                value: data.Machine.Status.Voltage
                 tsp: tsp
-                pivot: machine_name
+                value: value
+                pivot: null
           sections:
             sectionLimits:
               - $num:0
@@ -27,26 +63,9 @@ widgets:
           advanced:
             averageLatest: "$num:"
           precision: $num:1
-        - label: $str:Tank Temperature
-          unit: $str:°C
-          data:
-            tableRef:
-              tablename: opcuadata
-              queryParams:
-                limit: 5
-                windowLength: 5
-                nowMinusPeriods: 0
-              format:
-                value: data.Tank.Temperature
-                tsp: tsp
-                pivot: machine_name
-          sections:
-            sectionLimits:
-              - $num:0
-              - $num:1000
-              - $num:3000
-              - $num:4000
-            backgroundColors: []
+          valueColor: ""
+      title: null
+      subTitle: null
     version: 1.7.12
     layout_id: 1
   - package_name: widget-linechart
@@ -57,66 +76,191 @@ widgets:
         yAxisLabel: "$str:"
         columnLayout: $bool:true
       dataseries:
-        - label: $str:Tank Temperature
+        - label:
+            valueRef:
+              tablename: opcua_flat_measures
+              column: measure_name
+              queryParams:
+                filterAnd:
+                  - column: machine_name
+                    operator: =
+                    value: "1"
+                    dataType: string
+                    useRoute: true
+                  - column: measure_name
+                    operator: =
+                    value: "2"
+                    dataType: string
+                    useRoute: true
+                  - column: latest_flag
+                    operator: =
+                    value: "true"
+                    dataType: boolean
+                    useRoute: false
+                  - column: deleted
+                    operator: =
+                    value: "false"
+                    dataType: boolean
+                limit: 1
           type: $str:line
           styling:
             borderWidth: $num:2
             borderDash: $str:5, 5
-            radius: $num:0
             pointStyle: $str:rectRounded
           advanced:
             drawOrder: $num:3
             chartName: $str:t
           data:
             tableRef:
-              tablename: opcuadata
+              tablename: flatopcuadata
               queryParams:
                 limit: 3000
+                filterAnd:
+                  - column: machine_name
+                    operator: =
+                    value: "1"
+                    dataType: string
+                    useRoute: true
+                  - column: leaf_path
+                    operator: =
+                    value: "2"
+                    dataType: string
+                    useRoute: true
                 windowPeriod: minute
                 windowLength: 5
                 nowMinusPeriods: 0
                 timeRange:
-                  - 2025-06-18T21:04:00.000Z
-                  - 2025-06-18T21:09:00.000Z
+                  - 2025-09-29T10:38:24.039Z
+                  - 2025-09-29T10:43:24.039Z
               format:
                 x: tsp
-                y: data.Tank.Temperature
-                r: $num:10
-                pivot: devname
-        - label: $str:Voltage
-          data:
-            tableRef:
-              tablename: opcuadata
-              queryParams:
-                limit: 3000
-                windowLength: 5
-                nowMinusPeriods: 0
-                windowPeriod: minute
-                timeRange:
-                  - 2025-06-18T21:04:00.000Z
-                  - 2025-06-18T21:09:00.000Z
-              format:
-                x: tsp
-                y: data.Machine.Status.Voltage
-                pivot: devname
-          type: $str:line
+                y: value
+                r: $num:2
+                pivot: null
+          backgroundColor: ""
+          borderColor: ""
+      title: null
+      subTitle: null
     version: 1.6.16
     layout_id: 2
+  - package_name: widget-sidenav
+    chartconfig:
+      title: $str:Machines
+      style:
+        fontSize: $num:16
+        fontWeight: $num:400
+      navItems:
+        tableRef:
+          tablename: devices
+          queryParams:
+            limit: 500
+            filterAnd:
+              - column: latest_flag
+                operator: =
+                value: "true"
+                dataType: boolean
+              - column: deleted
+                operator: =
+                value: "false"
+                dataType: boolean
+            windowPeriod: null
+            windowLength: 5
+            nowMinusPeriods: 0
+          format:
+            label: machine_name
+            iconName: $str:developer_board
+            route: machine_name
+            leadingSlash: $bool:true
+            trailingSlash: $bool:true
+      route: $str:/
+      leadingSlash: null
+      trailingSlash: null
+    version: 1.0.9
+    layout_id: cc888b7b-d650-47d4-bbde-f875e0629fcc
+  - package_name: widget-sidenav
+    chartconfig:
+      title: $str:Measures
+      style:
+        fontSize: $num:16
+        fontWeight: $num:400
+      navItems:
+        tableRef:
+          tablename: opcua_flat_measures
+          queryParams:
+            limit: 100
+            filterAnd:
+              - column: latest_flag
+                operator: =
+                value: "true"
+                dataType: boolean
+              - column: deleted
+                operator: =
+                value: "false"
+                dataType: boolean
+            windowPeriod: null
+            windowLength: 5
+            nowMinusPeriods: 0
+          format:
+            label: measure_name
+            iconName: $str:show_chart
+            route: measure_name
+            leadingSlash: null
+            trailingSlash: null
+      route:
+        valueRef:
+          tablename: devices
+          column: machine_name
+      leadingSlash: $bool:true
+      trailingSlash: null
+    version: 1.0.9
+    layout_id: e43b2723-c273-495e-857a-ecabe80c8b91
 layout:
-  - w: 12
-    h: 4
-    x: 0
-    y: 0
-    id: 1
-  - w: 12
-    h: 6
-    x: 0
-    y: 4
-    id: 2
+  gridLayout:
+    - x: 0
+      y: 0
+      w: 7
+      h: 48
+      id: cc888b7b-d650-47d4-bbde-f875e0629fcc
+  subRoutes:
+    "*":
+      gridLayout:
+        - x: 0
+          y: 0
+          w: 7
+          h: 48
+          id: cc888b7b-d650-47d4-bbde-f875e0629fcc
+        - x: 7
+          y: 0
+          w: 9
+          h: 48
+          id: e43b2723-c273-495e-857a-ecabe80c8b91
+      subRoutes:
+        "*":
+          gridLayout:
+            - x: 0
+              y: 0
+              w: 7
+              h: 48
+              id: cc888b7b-d650-47d4-bbde-f875e0629fcc
+            - x: 7
+              y: 0
+              w: 9
+              h: 48
+              id: e43b2723-c273-495e-857a-ecabe80c8b91
+            - x: 16
+              y: 0
+              w: 32
+              h: 15
+              id: "1"
+            - x: 16
+              y: 15
+              w: 32
+              h: 33
+              id: "2"
 style:
   theme:
-    theme_name: shine
-  background_color: "#0000"
-  text_color: "#333"
-  tile_background_color: "#0000"
-  tile_border_color: "#ccc"
+    theme_name: dark
+  background_color: "#333"
+  text_color: "#eee"
+  tile_background_color: "#333"
+  tile_border_color: "#aaa"
