@@ -30,30 +30,6 @@ widgets:
                     useRoute: true
                 limit: 1
           unit: "$str:"
-          data:
-            tableRef:
-              tablename: flatopcuadata
-              queryParams:
-                limit: 1
-                filterAnd:
-                  - column: leaf_path
-                    operator: =
-                    value: "2"
-                    dataType: string
-                    useRoute: true
-                  - column: machine_name
-                    operator: =
-                    value: "1"
-                    dataType: string
-                    useRoute: true
-                windowPeriod: null
-                windowLength: 5
-                nowMinusPeriods: 0
-                timeRange: null
-              format:
-                tsp: tsp
-                value: value
-                pivot: null
           sections:
             sectionLimits:
               - $num:0
@@ -65,6 +41,24 @@ widgets:
             averageLatest: "$num:"
           precision: $num:1
           valueColor: ""
+          value:
+            valueRef:
+              tablename: flatopcuadata
+              column: value
+              queryParams:
+                filterAnd:
+                  - column: leaf_path
+                    operator: =
+                    value: "2"
+                    dataType: string
+                    useRoute: true
+                  - column: machine_name
+                    operator: =
+                    value: "1"
+                    dataType: string
+                    useRoute: true
+                limit: 1
+          multiChart: null
       title: null
       subTitle: null
     version: 1.7.22

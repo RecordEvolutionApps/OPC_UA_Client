@@ -1,2 +1,2 @@
-asyncua==1.1.6
-ironflock==1.1.0
+asyncua==1.1.8
+ironflock==1.3.4
