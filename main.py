@@ -8,6 +8,7 @@ from datetime import datetime
 from flatTree import json_tree_to_table
 
 DEVICE_KEY = os.environ["DEVICE_KEY"]
+DEVICE_NAMAE = os.environ.get("DEVICE_NAME")
 OPCUA_URL = os.environ.get("OPCUA_URL", "opc.tcp://localhost:4840/opcuaserver")
 OPCUA_NAMESPACE = os.environ.get("OPCUA_NAMESPACE", "example:ironflock:com")
 OPCUA_VARIABLES = os.environ.get("OPCUA_VARIABLES", '{"Tank": "Temperature"}')
@@ -21,7 +22,7 @@ async def register_device():
             {
                 "tsp": datetime.now().astimezone().isoformat(),
                 "url": f"https://{DEVICE_KEY}-opc_ua_client-1881.app.ironflock.com",
-                "machine_name": MACHINE_NAME,
+                "machine_name": MACHINE_NAME or DEVICE_NAMAE,
                 "deleted": False
             },
         )
