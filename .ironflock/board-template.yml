@@ -63,6 +63,8 @@ widgets:
       subTitle: null
     version: 1.7.22
     layout_id: 1
+    custom_style:
+      tile_border_color: "#0000"
   - package_name: widget-linechart
     chartconfig:
       axis:
@@ -105,7 +107,7 @@ widgets:
             pointStyle: $str:rectRounded
           advanced:
             drawOrder: $num:3
-            chartName: $str:t
+            chartName: "$str:"
           data:
             tableRef:
               tablename: flatopcuadata
@@ -137,7 +139,9 @@ widgets:
           borderColor: ""
       title: null
       subTitle: null
-    version: 1.6.20
+    custom_style:
+      tile_border_color: "#0000"
+    version: 1.6.23
     layout_id: 2
   - package_name: widget-sidenav
     chartconfig:
@@ -173,6 +177,11 @@ widgets:
       trailingSlash: null
     version: 1.0.10
     layout_id: cc888b7b-d650-47d4-bbde-f875e0629fcc
+    custom_style:
+      text_color: "#3e2723"
+      tile_background_color: "#759aa0"
+      tile_border_color: "#0000"
+      tile_border_radius: 6px
   - package_name: widget-sidenav
     chartconfig:
       title: $str:Measures
@@ -210,6 +219,11 @@ widgets:
       trailingSlash: null
     version: 1.0.10
     layout_id: e43b2723-c273-495e-857a-ecabe80c8b91
+    custom_style:
+      text_color: "#3e2723"
+      tile_background_color: "#759aa0"
+      tile_border_color: "#0000"
+      tile_border_radius: 6px
 layout:
   gridLayout:
     - x: 0
