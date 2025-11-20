@@ -24,22 +24,51 @@ Parameter | Meaning | Default
 --- | --- | ---
 OPCUA_URL      | IP address of OPC UA Server for OPC UA Client to listen to | opc.tcp://0.0.0.0:4840/opcuaserver
 OPCUA_NAMESPACE    | Namespace under which OPC UA Server is registered          | example:ironflock:com
-OPCUA_VARIABLES        | OPC UA (sub)schema that should be extracted and stored     |  {"Tank": "Temperature", "Machine": {"Status": "Voltage"}}
+OPCUA_VARIABLES        | OPC UA NodeSet JSON or legacy schema to extract and store (supports multiline YAML)     |  [{"NodeClass": "Variable", "NodeId": "ns=2;s=Tank.Temperature", "BrowseName": "Temperature"}]
 PUBLISH_INTERVAL       | read every x seconds                                     |  2
+
+**Note:** `OPCUA_VARIABLES` supports multiline YAML format. See [YAML_CONFIG.md](YAML_CONFIG.md) for examples.
 
 ## OPCUA Value Extraction
 
-In order to define, which variables should be read and published, you can specify a json string.
-The json string should be a subtree of the OPCUA schema tree, that is offered by the connected OPCUA server.
+You can specify variables to read in two formats:
+
+### 1. NodeSet JSON Format (Recommended)
+
+Provide an array of OPC UA node definitions following the NodeSet2 XML JSON schema:
+
+```json
+[
+    {
+        "NodeClass": "Variable",
+        "NodeId": "ns=2;s=Tank.Temperature",
+        "BrowseName": "Temperature",
+        "DisplayName": "Tank Temperature"
+    },
+    {
+        "NodeClass": "Variable",
+        "NodeId": {"IdType": "String", "Id": "Machine.Voltage", "Namespace": 2},
+        "BrowseName": "Voltage"
+    }
+]
+```
+
+You can also provide a single node object instead of an array.
+
+### 2. Legacy Schema Format
+
+The legacy custom schema format is still supported:
 
 ```json
 {
     "Tank": "Temperature", 
     "Machine": {
         "Status": "Voltage"
-        }
+    }
 }
 ```
+
+The system automatically detects which format you're using.
 
 ## Data Table Format
 

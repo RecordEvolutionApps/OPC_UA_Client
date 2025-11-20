@@ -1,0 +1,56 @@
+{
+  "description": "Example configurations for OPCUA_VARIABLES environment variable",
+  
+  "nodeset_format_array": [
+    {
+      "NodeClass": "Variable",
+      "NodeId": "ns=2;s=Tank.Temperature",
+      "BrowseName": "Temperature",
+      "DisplayName": "Tank Temperature"
+    },
+    {
+      "NodeClass": "Variable",
+      "NodeId": "ns=2;s=Machine.Status.Voltage",
+      "BrowseName": "Voltage",
+      "DisplayName": "Machine Voltage"
+    },
+    {
+      "NodeClass": "Variable",
+      "NodeId": "ns=2;i=1001",
+      "BrowseName": "Pressure",
+      "DisplayName": "System Pressure"
+    }
+  ],
+  
+  "nodeset_format_single": {
+    "NodeClass": "Variable",
+    "NodeId": "ns=2;s=Tank.Temperature",
+    "BrowseName": "Temperature",
+    "DisplayName": "Tank Temperature"
+  },
+  
+  "nodeset_format_dict_nodeid": [
+    {
+      "NodeClass": "Variable",
+      "NodeId": {
+        "IdType": "String",
+        "Id": "Tank.Temperature",
+        "Namespace": 2
+      },
+      "BrowseName": "Temperature"
+    }
+  ],
+  
+  "legacy_schema_format": {
+    "Tank": "Temperature",
+    "Machine": {
+      "Status": "Voltage"
+    }
+  },
+  
+  "usage": {
+    "note": "Copy one of the above formats and set it as the OPCUA_VARIABLES environment variable",
+    "example_nodeset": "export OPCUA_VARIABLES='[{\"NodeClass\":\"Variable\",\"NodeId\":\"ns=2;s=Tank.Temperature\",\"BrowseName\":\"Temperature\"}]'",
+    "example_legacy": "export OPCUA_VARIABLES='{\"Tank\":\"Temperature\"}'"
+  }
+}

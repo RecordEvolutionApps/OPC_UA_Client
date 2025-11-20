@@ -1,6 +1,8 @@
-import asyncio
+import logging
 from asyncua import Client
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 class OPCUAClient:
     def __init__(self, endpoint, namespace_name):
@@ -21,7 +23,7 @@ class OPCUAClient:
     async def get_namespace_index(self, namespace_name):
         """Retrieve the namespace index from the server based on its name."""
         namespaces = await self.client.get_namespace_array()
-        print("Namespaces:", namespaces)  # Debug output
+        logger.debug(f"Available namespaces: {namespaces}")
         if namespace_name in namespaces:
             return namespaces.index(namespace_name)
         else:
@@ -40,11 +42,78 @@ class OPCUAClient:
             
             # Fetch the node dynamically
             node = await self.client.nodes.root.get_child(node_path)
-            # print(f"Resolved Path {' → '.join(path_parts)} -> {node.nodeid}")
+            logger.debug(f"Resolved Path {' → '.join(path_parts)} -> {node.nodeid}")
             return node
         except Exception as e:
-            print(f"Failed to resolve path {' → '.join(path_parts)}: {e}")
+            logger.warning(f"Failed to resolve path {' → '.join(path_parts)}: {e}")
             return None
+
+    def _parse_nodeid(self, nodeid_str):
+        """
+        Parse a NodeId string (e.g., 'ns=2;i=1001' or 'ns=2;s=Tank.Temperature').
+        Returns a tuple (namespace_index, identifier).
+        """
+        if isinstance(nodeid_str, dict):
+            # Handle NodeId as dict: {"IdType": "String", "Id": "Tank.Temperature", "Namespace": 2}
+            ns = nodeid_str.get("Namespace", 0)
+            id_val = nodeid_str.get("Id")
+            return (ns, id_val)
+        
+        # Parse string format: "ns=2;i=1001" or "ns=2;s=Tank.Temperature"
+        parts = nodeid_str.split(";")
+        ns = 0
+        identifier = None
+        
+        for part in parts:
+            if part.startswith("ns="):
+                ns = int(part.split("=")[1])
+            elif part.startswith(("i=", "s=", "g=", "b=")):
+                identifier = part.split("=", 1)[1]
+        
+        return (ns, identifier)
+
+    async def extract_variable_nodes_from_nodeset(self, nodeset):
+        """
+        Extract variable nodes from a NodeSet JSON structure.
+        Returns a list of (browse_name, node_id, display_name) tuples for Variable nodes.
+        
+        :param nodeset: List of node dictionaries from NodeSet JSON
+        :return: List of (browse_name, node_obj, display_name) tuples
+        """
+        variable_nodes = []
+        
+        # Handle both array and single node
+        nodes = nodeset if isinstance(nodeset, list) else [nodeset]
+        
+        for node_def in nodes:
+            # Check if this is a Variable node
+            node_class = node_def.get("NodeClass", "")
+            
+            if node_class == "Variable" or node_class == 2:  # 2 is Variable in numeric form
+                node_id_def = node_def.get("NodeId")
+                browse_name = node_def.get("BrowseName", "")
+                display_name = node_def.get("DisplayName", browse_name)
+                
+                # Handle BrowseName as dict or string
+                if isinstance(browse_name, dict):
+                    browse_name = browse_name.get("Name", "")
+                if isinstance(display_name, dict):
+                    display_name = display_name.get("Text", browse_name)
+                
+                if not node_id_def:
+                    logger.warning(f"Node {browse_name} has no NodeId, skipping")
+                    continue
+                
+                # Try to get the node from the server
+                try:
+                    ns, identifier = self._parse_nodeid(node_id_def)
+                    node_obj = self.client.get_node(f"ns={ns};s={identifier}")
+                    variable_nodes.append((browse_name, node_obj, display_name))
+                    logger.debug(f"Found variable node: {browse_name} ({node_id_def})")
+                except Exception as e:
+                    logger.warning(f"Could not resolve node {browse_name} ({node_id_def}): {e}")
+        
+        return variable_nodes
 
     async def extract_leaf_nodes(self, schema, parent_path_parts=None):
         """
@@ -76,13 +145,42 @@ class OPCUAClient:
                 if node:
                     node_id = node.nodeid
                     full_opcua_path_string = ".".join(opcua_full_path_parts)
-                    # print(f"Resolved {full_opcua_path_string} -> {node_id}")
+                    logger.debug(f"Resolved {full_opcua_path_string} -> {node_id}")
                     # Store (OPC UA full path string, NodeId, parent path in original schema, key for this variable, actual OPC UA variable name)
                     leaf_nodes_info.append((full_opcua_path_string, node_id, current_schema_parent_path, current_schema_key, opcua_variable_name))
                 else:
-                    print(f"Warning: Could not resolve {'.'.join(opcua_full_path_parts)} to a node ID.")
+                    logger.warning(f"Could not resolve {'.'.join(opcua_full_path_parts)} to a node ID")
             
         return leaf_nodes_info
+
+    async def read_from_nodeset(self, nodeset):
+        """
+        Extract and read data from OPC UA server based on NodeSet JSON structure.
+        
+        :param nodeset: NodeSet JSON structure (list of node definitions)
+        :return: Dictionary with timestamp and data populated with values.
+        """
+        tsp = datetime.now().astimezone().isoformat()
+        data = {}
+        
+        # Extract variable nodes from the NodeSet
+        variable_nodes = await self.extract_variable_nodes_from_nodeset(nodeset)
+        
+        if not variable_nodes:
+            logger.warning("No variable nodes found in NodeSet")
+            return {"tsp": tsp, "data": data}
+        
+        # Prepare for bulk reading
+        nodes_to_read = [node_obj for _, node_obj, _ in variable_nodes]
+        
+        # Read values from nodes
+        values = await self.client.read_values(nodes_to_read)
+        
+        # Populate data with browse_name: value pairs
+        for i, (browse_name, node_obj, display_name) in enumerate(variable_nodes):
+            data[browse_name] = values[i]
+        
+        return {"tsp": tsp, "data": data}
 
     async def read_from_schema(self, schema):
         """
@@ -102,7 +200,7 @@ class OPCUAClient:
         # leaf_nodes_info will contain (full_opcua_path_string, node_id, schema_parent_path, schema_key_for_variable, opcua_variable_name) tuples.
         leaf_nodes_info = await self.extract_leaf_nodes(schema)
         if not leaf_nodes_info:
-            print("No leaf nodes found.")
+            logger.warning("No leaf nodes found in schema")
             return {"tsp": tsp, "data": populated_schema} # Return schema with unresolved values if no nodes found
 
         # Prepare for bulk reading
@@ -115,7 +213,7 @@ class OPCUAClient:
             node_id_to_schema_info[str(node_id)] = (schema_parent_path, schema_key_for_variable, opcua_variable_name)
 
         if not nodes_to_read:
-            print("No nodes to read after resolution.")
+            logger.warning("No nodes to read after resolution")
             return {"tsp": tsp, "data": populated_schema}
 
         # Read values from nodes
@@ -156,4 +254,4 @@ class OPCUAClient:
         objects_node = self.client.nodes.objects
         children = await objects_node.get_children()
         for child in children:
-            print("Node:", child)
+            logger.info(f"Node: {child}")
