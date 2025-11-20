@@ -23,11 +23,11 @@ Go the settings of this app on your device and configure it as detailed below:
 Parameter | Meaning | Default
 --- | --- | ---
 OPCUA_URL      | IP address of OPC UA Server for OPC UA Client to listen to | opc.tcp://0.0.0.0:4840/opcuaserver
-OPCUA_NAMESPACE    | Namespace under which OPC UA Server is registered          | example:ironflock:com
-OPCUA_VARIABLES        | OPC UA NodeSet JSON or legacy schema to extract and store (supports multiline YAML)     |  [{"NodeClass": "Variable", "NodeId": "ns=2;s=Tank.Temperature", "BrowseName": "Temperature"}]
+OPCUA_NAMESPACE    | Fallback namespace (used if not specified in OPCUA_VARIABLES)          | example:ironflock:com
+OPCUA_VARIABLES        | OPC UA NodeSet JSON or legacy schema to extract and store     |  See examples below
 PUBLISH_INTERVAL       | read every x seconds                                     |  2
 
-**Note:** `OPCUA_VARIABLES` supports multiline YAML format. See [YAML_CONFIG.md](YAML_CONFIG.md) for examples.
+**Namespace Priority:** If `OPCUA_VARIABLES` contains a full NodeSet with `NamespaceUris`, that namespace takes priority over `OPCUA_NAMESPACE`.
 
 ## OPCUA Value Extraction
 
@@ -35,7 +35,32 @@ You can specify variables to read in two formats:
 
 ### 1. NodeSet JSON Format (Recommended)
 
-Provide an array of OPC UA node definitions following the NodeSet2 XML JSON schema:
+Provide an array of OPC UA node definitions following the NodeSet2 XML JSON schema.
+
+**Example: Extract Status and Temperature variables**
+
+```json
+[
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;i=6001",
+    "BrowseName": "1:Status",
+    "DisplayName": { "Locale": "en", "Text": "Status" },
+    "DataType": "String",
+    "ValueRank": -1
+  },
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;i=7001",
+    "BrowseName": "1:Temperature",
+    "DisplayName": { "Locale": "en", "Text": "Temperature" },
+    "DataType": "i=11",
+    "ValueRank": -1
+  }
+]
+```
+
+**Alternative NodeId formats:**
 
 ```json
 [
@@ -53,7 +78,31 @@ Provide an array of OPC UA node definitions following the NodeSet2 XML JSON sche
 ]
 ```
 
-You can also provide a single node object instead of an array.
+
+The application automatically handles newlines and whitespace in the JSON.
+
+**Nested Variables with NodeSet:**
+
+The enhanced NodeSet parser automatically extracts hierarchy from the NodeId path. For example:
+
+```json
+[
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;s=Machine1.Tank.Temperature",
+    "BrowseName": "Temperature"
+  },
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;s=Machine1.Motor.Speed",
+    "BrowseName": "Speed"
+  }
+]
+```
+
+This creates the nested structure: `Machine1.Tank.Temperature` and `Machine1.Motor.Speed`
+
+The path is parsed from the NodeId string identifier (the part after `;s=`), split by dots.
 
 ### 2. Legacy Schema Format
 

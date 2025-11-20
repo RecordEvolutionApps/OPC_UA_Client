@@ -1,0 +1,91 @@
+{
+  "NamespaceUris": [
+    "http://example.com/MyMachine/"
+  ],
+  "Models": [
+    {
+      "ModelUri": "http://example.com/MyMachine/",
+      "Version": "1.0.0",
+      "PublicationDate": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "Aliases": {
+    "BaseObjectType": "i=58",
+    "BaseDataVariableType": "i=63",
+    "FolderType": "i=61",
+    "Organizes": "i=35",
+    "HasComponent": "i=47",
+    "String": "i=12",
+    "Double": "i=11"
+  },
+  "UAObjectTypes": [
+    {
+      "NodeId": "ns=1;i=1001",
+      "BrowseName": "1:MachineType",
+      "DisplayName": { "Locale": "en", "Text": "MachineType" },
+      "Description": { "Locale": "en", "Text": "Represents a generic machine" },
+      "References": [
+        { "ReferenceType": "HasSubtype", "IsForward": false, "Target": "BaseObjectType" }
+      ]
+    },
+    {
+      "NodeId": "ns=1;i=1002",
+      "BrowseName": "1:TankType",
+      "DisplayName": { "Locale": "en", "Text": "TankType" },
+      "Description": { "Locale": "en", "Text": "Represents a tank component" },
+      "References": [
+        { "ReferenceType": "HasSubtype", "IsForward": false, "Target": "BaseObjectType" }
+      ]
+    }
+  ],
+  "UAObjects": [
+    {
+      "NodeId": "ns=1;i=5001",
+      "BrowseName": "1:Machine1",
+      "DisplayName": { "Locale": "en", "Text": "Machine1" },
+      "TypeDefinition": "ns=1;i=1001",
+      "References": [
+        { "ReferenceType": "HasComponent", "Target": "ns=1;i=5002" }
+      ]
+    },
+    {
+      "NodeId": "ns=1;i=5002",
+      "BrowseName": "1:Tank",
+      "DisplayName": { "Locale": "en", "Text": "Tank" },
+      "TypeDefinition": "ns=1;i=1002",
+      "ParentNodeId": "ns=1;i=5001",
+      "References": [
+        { "ReferenceType": "HasComponent", "Target": "ns=1;i=6001" },
+        { "ReferenceType": "HasComponent", "Target": "ns=1;i=7001" }
+      ]
+    }
+  ],
+  "UAVariables": [
+    {
+      "NodeId": "ns=1;i=6001",
+      "BrowseName": "1:Status",
+      "DisplayName": { "Locale": "en", "Text": "Status" },
+      "ParentNodeId": "ns=1;i=5002",
+      "DataType": "String",
+      "ValueRank": -1,
+      "AccessLevel": 3,
+      "UserAccessLevel": 3,
+      "Value": {
+        "String": "Running"
+      }
+    },
+    {
+      "NodeId": "ns=1;i=7001",
+      "BrowseName": "1:Temperature",
+      "DisplayName": { "Locale": "en", "Text": "Temperature" },
+      "ParentNodeId": "ns=1;i=5002",
+      "DataType": "Double",
+      "ValueRank": -1,
+      "AccessLevel": 3,
+      "UserAccessLevel": 3,
+      "Value": {
+        "Double": 42.7
+      }
+    }
+  ]
+}

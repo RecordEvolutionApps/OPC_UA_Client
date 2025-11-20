@@ -48,6 +48,18 @@ class OPCUAClient:
             logger.warning(f"Failed to resolve path {' → '.join(path_parts)}: {e}")
             return None
 
+    def _extract_namespace_from_nodeset(self, nodeset):
+        """
+        Extract namespace URI from NodeSet JSON if present.
+        Returns the first namespace URI from NamespaceUris array, or None.
+        """
+        # Handle dict with NamespaceUris key
+        if isinstance(nodeset, dict) and "NamespaceUris" in nodeset:
+            uris = nodeset.get("NamespaceUris", [])
+            if uris and len(uris) > 0:
+                return uris[0]  # Return first custom namespace
+        return None
+
     def _parse_nodeid(self, nodeid_str):
         """
         Parse a NodeId string (e.g., 'ns=2;i=1001' or 'ns=2;s=Tank.Temperature').
@@ -77,13 +89,19 @@ class OPCUAClient:
         Extract variable nodes from a NodeSet JSON structure.
         Returns a list of (browse_name, node_id, display_name) tuples for Variable nodes.
         
-        :param nodeset: List of node dictionaries from NodeSet JSON
+        :param nodeset: List of node dictionaries from NodeSet JSON, or full NodeSet with UAVariables
         :return: List of (browse_name, node_obj, display_name) tuples
         """
         variable_nodes = []
         
+        # Handle full NodeSet structure with UAVariables key
+        if isinstance(nodeset, dict) and "UAVariables" in nodeset:
+            nodes = nodeset.get("UAVariables", [])
         # Handle both array and single node
-        nodes = nodeset if isinstance(nodeset, list) else [nodeset]
+        elif isinstance(nodeset, list):
+            nodes = nodeset
+        else:
+            nodes = [nodeset]
         
         for node_def in nodes:
             # Check if this is a Variable node
@@ -153,6 +171,38 @@ class OPCUAClient:
             
         return leaf_nodes_info
 
+    def _build_nested_dict(self, path_parts, value):
+        """
+        Build a nested dictionary from a path and value.
+        E.g., ["Machine1", "Tank", "Temperature"], 65.3 
+        -> {"Machine1": {"Tank": {"Temperature": 65.3}}}
+        """
+        if len(path_parts) == 1:
+            return {path_parts[0]: value}
+        
+        result = {}
+        current = result
+        for i, part in enumerate(path_parts[:-1]):
+            current[part] = {}
+            current = current[part]
+        current[path_parts[-1]] = value
+        
+        return result
+    
+    def _merge_nested_dicts(self, dict1, dict2):
+        """
+        Recursively merge two nested dictionaries.
+        """
+        result = dict1.copy()
+        
+        for key, value in dict2.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self._merge_nested_dicts(result[key], value)
+            else:
+                result[key] = value
+        
+        return result
+
     async def read_from_nodeset(self, nodeset):
         """
         Extract and read data from OPC UA server based on NodeSet JSON structure.
@@ -176,9 +226,43 @@ class OPCUAClient:
         # Read values from nodes
         values = await self.client.read_values(nodes_to_read)
         
-        # Populate data with browse_name: value pairs
+        # Build nested structure from NodeId paths
         for i, (browse_name, node_obj, display_name) in enumerate(variable_nodes):
-            data[browse_name] = values[i]
+            value = values[i]
+            
+            # Get the original node definition to extract NodeId
+            node_def = nodeset[i] if isinstance(nodeset, list) and i < len(nodeset) else {}
+            node_id = node_def.get("NodeId", "")
+            
+            # Try to extract path from NodeId
+            path_parts = None
+            
+            # Parse string-based NodeId (e.g., "ns=1;s=Machine1.Tank.Temperature")
+            if isinstance(node_id, str) and ";s=" in node_id:
+                # Extract the string identifier part
+                id_part = node_id.split(";s=")[-1]
+                # Split by dot to get hierarchy
+                path_parts = id_part.split(".")
+            elif isinstance(node_id, dict):
+                # Handle dict-based NodeId
+                id_val = node_id.get("Id", "")
+                if isinstance(id_val, str) and "." in id_val:
+                    path_parts = id_val.split(".")
+            
+            # If we found a path, build nested structure; otherwise use simple name
+            if path_parts and len(path_parts) > 1:
+                # Build nested dict from path
+                nested = self._build_nested_dict(path_parts, value)
+                # Merge into main data structure
+                data = self._merge_nested_dicts(data, nested)
+                logger.debug(f"Added nested variable: {'.'.join(path_parts)} = {value}")
+            else:
+                # Fallback: use clean name (strip namespace prefix)
+                clean_name = browse_name.split(":")[-1] if ":" in browse_name else browse_name
+                if display_name and display_name != browse_name:
+                    clean_name = display_name
+                data[clean_name] = value
+                logger.debug(f"Added flat variable: {clean_name} = {value}")
         
         return {"tsp": tsp, "data": data}
 

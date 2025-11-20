@@ -1,0 +1,18 @@
+[
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;s=Machine1.Tank.Status",
+    "BrowseName": "1:Status",
+    "DisplayName": { "Locale": "en", "Text": "Status" },
+    "DataType": "String",
+    "ValueRank": -1
+  },
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;s=Machine1.Tank.Temperature",
+    "BrowseName": "1:Temperature",
+    "DisplayName": { "Locale": "en", "Text": "Temperature" },
+    "DataType": "i=11",
+    "ValueRank": -1
+  }
+]

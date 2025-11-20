@@ -16,13 +16,14 @@ OPCUA_URL:
     optional: false
 OPCUA_NAMESPACE:
     defaultValue: example:ironflock:com # OPTIONAL | Default value. (string | number)
-    description: Namespace of OPC UA Server # OPTIONAL | Description. (string)
-    label: Namespace of OPC UA Server' # REQUIRED | Label displayed above the input field. (string)
+    description: Namespace of OPC UA Server to use for variable extraction. (If namespaces are provided as part of the OPCUA_VARIABLES, this will be ignored.)
+    label: OPC UA Namespace # REQUIRED | Label displayed above the input field. (string)
     type: text # REQUIRED | Type of value. ('numeric' | 'text' | 'boolean')
     secret: false # OPTIONAL | Makes value invisible once set. (boolean)
     optional: false # OPTIONAL | Optional or required. (boolean)
 OPCUA_VARIABLES:
-    label: JSON subtree structure containing only the part of the server's OPCUA schema that should be extracted
+    label: Subtree structure containing only the part of the server's OPCUA schema that should be extracted
+    description: Can be either a full NodeSet structure or a legacy simple schema. See README for examples.
     defaultValue: '{"Tank": "Temperature", "Machine": {"Status": "Voltage"}}'
     type: textarea
     secret: false
@@ -35,7 +36,6 @@ PUBLISH_INTERVAL:
     optional: false
 MACHINE_NAME:
     label: Machine Name
-    deffaultValue: My OPCUA Machine
     description: The value you enter here will be stored as machine_name alongside with the extracted data.
     defaultValue: My OPCUA Machine
     type: text

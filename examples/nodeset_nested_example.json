@@ -1,0 +1,34 @@
+[
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;s=Machine1.Tank.Temperature",
+    "BrowseName": "Temperature",
+    "DisplayName": { "Locale": "en", "Text": "Tank Temperature" },
+    "DataType": "Double",
+    "ValueRank": -1
+  },
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;s=Machine1.Tank.Pressure",
+    "BrowseName": "Pressure",
+    "DisplayName": { "Locale": "en", "Text": "Tank Pressure" },
+    "DataType": "Double",
+    "ValueRank": -1
+  },
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;s=Machine1.Motor.Speed",
+    "BrowseName": "Speed",
+    "DisplayName": { "Locale": "en", "Text": "Motor Speed" },
+    "DataType": "Double",
+    "ValueRank": -1
+  },
+  {
+    "NodeClass": "Variable",
+    "NodeId": "ns=1;s=Machine1.Motor.Status",
+    "BrowseName": "Status",
+    "DisplayName": { "Locale": "en", "Text": "Motor Status" },
+    "DataType": "String",
+    "ValueRank": -1
+  }
+]

@@ -7,15 +7,15 @@ WORKDIR /usr/src/app
 
 RUN pip install --upgrade pip
 
-# install rust for building cryptography
-# RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-# ENV PATH="/root/.cargo/bin:${PATH}"
-
+# Copy project configuration files
+COPY pyproject.toml ./
 COPY requirements.txt ./
 
-RUN pip install -r requirements.txt
+# Install dependencies from pyproject.toml
+RUN pip install .
 
-COPY . ./
+# Copy application code
+COPY *.py ./
 
 CMD python3 -u main.py
 

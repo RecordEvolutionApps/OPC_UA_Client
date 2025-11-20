@@ -87,7 +87,32 @@ async def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    opcua_client = OPCUAClient(OPCUA_URL, OPCUA_NAMESPACE)
+    # Parse OPCUA_VARIABLES first to extract namespace if present
+    # Clean multiline YAML input (handles \n escapes and whitespace)
+    cleaned_variables = clean_multiline_env_var(OPCUA_VARIABLES)
+    logger.debug(f"Cleaned OPCUA_VARIABLES: {cleaned_variables}")
+    
+    try:
+        variables_config = json.loads(cleaned_variables)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse OPCUA_VARIABLES as JSON: {e}")
+        logger.error(f"Raw value: {OPCUA_VARIABLES}")
+        logger.error(f"Cleaned value: {cleaned_variables}")
+        raise
+    
+    # Extract namespace from OPCUA_VARIABLES if present, otherwise use OPCUA_NAMESPACE
+    namespace_to_use = OPCUA_NAMESPACE
+    
+    # Check if variables_config contains NamespaceUris (full NodeSet format)
+    if isinstance(variables_config, dict) and "NamespaceUris" in variables_config:
+        uris = variables_config.get("NamespaceUris", [])
+        if uris and len(uris) > 0:
+            namespace_to_use = uris[0]
+            logger.info(f"Using namespace from OPCUA_VARIABLES: {namespace_to_use}")
+    else:
+        logger.info(f"Using namespace from OPCUA_NAMESPACE: {namespace_to_use}")
+    
+    opcua_client = OPCUAClient(OPCUA_URL, namespace_to_use)
     opcua_client_instance = opcua_client
     
     try:
@@ -100,26 +125,16 @@ async def main():
 
         first_response = True
         
-        # Parse OPCUA_VARIABLES - could be NodeSet or legacy schema
-        # Clean multiline YAML input (handles \n escapes and whitespace)
-        cleaned_variables = clean_multiline_env_var(OPCUA_VARIABLES)
-        logger.debug(f"Cleaned OPCUA_VARIABLES: {cleaned_variables}")
-        
-        try:
-            variables_config = json.loads(cleaned_variables)
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse OPCUA_VARIABLES as JSON: {e}")
-            logger.error(f"Raw value: {OPCUA_VARIABLES}")
-            logger.error(f"Cleaned value: {cleaned_variables}")
-            raise
-        
-        # Detect if it's a NodeSet structure (list or dict with NodeClass)
+        # Detect if it's a NodeSet structure (list, dict with NodeClass, or dict with UAVariables)
         is_nodeset = False
         if isinstance(variables_config, list):
             is_nodeset = True
-        elif isinstance(variables_config, dict) and "NodeClass" in variables_config:
-            is_nodeset = True
-            variables_config = [variables_config]  # Convert single node to list
+        elif isinstance(variables_config, dict):
+            if "NodeClass" in variables_config:
+                is_nodeset = True
+                variables_config = [variables_config]  # Convert single node to list
+            elif "UAVariables" in variables_config:
+                is_nodeset = True  # Full NodeSet format with UAVariables
         
         logger.info(f"Using {'NodeSet' if is_nodeset else 'legacy schema'} format for variable configuration")
         
