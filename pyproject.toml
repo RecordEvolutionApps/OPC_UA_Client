@@ -43,7 +43,7 @@ Homepage = "https://github.com/RecordEvolutionApps/OPC_UA_Client"
 Repository = "https://github.com/RecordEvolutionApps/OPC_UA_Client"
 
 [tool.setuptools]
-packages = [""]
+py-modules = ["main", "OPCUAClient", "flatTree"]
 
 [tool.black]
 line-length = 100

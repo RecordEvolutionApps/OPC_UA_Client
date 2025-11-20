@@ -9,7 +9,6 @@ RUN pip install --upgrade pip
 
 # Copy project configuration files
 COPY pyproject.toml ./
-COPY requirements.txt ./
 
 # Install dependencies from pyproject.toml
 RUN pip install .
