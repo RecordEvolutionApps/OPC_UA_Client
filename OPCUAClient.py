@@ -410,9 +410,12 @@ class OPCUAClient:
             for child in children:
                 if child.nodeid.NamespaceIndex == self.namespace_index:
                     node_class = await child.read_node_class()
+                    browse_name = await child.read_browse_name()
+                    logger.debug(f"Found child of Objects: {browse_name.Name} (NodeClass={node_class.value})")
                     if node_class.value == 1:  # Object
-                        browse_name = await child.read_browse_name()
                         top_level_objects.append((child, browse_name.Name))
+            
+            logger.info(f"Found {len(top_level_objects)} top-level objects in namespace: {[name for _, name in top_level_objects]}")
             
             # Recursively browse and read all variable values under each top-level object
             async def browse_and_read(node, path_parts):
