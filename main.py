@@ -25,16 +25,16 @@ def clean_multiline_env_var(env_value):
     """
     if not env_value:
         return env_value
-    
+
     # Replace literal \n strings with actual newlines
     cleaned = env_value.replace('\\n', '\n')
-    
+
     # Remove leading/trailing whitespace from each line
     lines = [line.strip() for line in cleaned.split('\n')]
-    
+
     # Join back together, removing empty lines
     cleaned = ''.join(line for line in lines if line)
-    
+
     return cleaned
 
 DEVICE_KEY = os.environ["DEVICE_KEY"]
@@ -97,22 +97,22 @@ async def connect_with_retry(opcua_client):
             logger.error(f"Failed to connect to OPC UA server: {e}")
             logger.info(f"Retrying in {RECONNECT_INTERVAL} second(s)...")
             await sleep(RECONNECT_INTERVAL)
-    
+
     return False
 
 
 async def main():
     global opcua_client_instance, shutdown_requested
-    
+
     # Register signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
     # Parse OPCUA_VARIABLES first to extract namespace if present
     # Clean multiline YAML input (handles \n escapes and whitespace)
     cleaned_variables = clean_multiline_env_var(OPCUA_VARIABLES)
     logger.debug(f"Cleaned OPCUA_VARIABLES: {cleaned_variables}")
-    
+
     # Check if OPCUA_VARIABLES is empty or just whitespace
     if not cleaned_variables or cleaned_variables.strip() == "":
         logger.info("OPCUA_VARIABLES is empty - will auto-discover all variables")
@@ -125,10 +125,10 @@ async def main():
             logger.error(f"Raw value: {OPCUA_VARIABLES}")
             logger.error(f"Cleaned value: {cleaned_variables}")
             raise
-    
+
     # Extract namespace from OPCUA_VARIABLES if present, otherwise use OPCUA_NAMESPACE
     namespace_to_use = OPCUA_NAMESPACE
-    
+
     # Check if variables_config contains NamespaceUris (full NodeSet format)
     if variables_config and isinstance(variables_config, dict) and "NamespaceUris" in variables_config:
         uris = variables_config.get("NamespaceUris", [])
@@ -137,11 +137,11 @@ async def main():
             logger.info(f"Using namespace from OPCUA_VARIABLES: {namespace_to_use}")
     else:
         logger.info(f"Using namespace from OPCUA_NAMESPACE: {namespace_to_use}")
-    
+
     # Detect if it's a NodeSet structure (list, dict with NodeClass, or dict with UAVariables)
     is_nodeset = False
     auto_discover = variables_config is None
-    
+
     if not auto_discover:
         if isinstance(variables_config, list):
             is_nodeset = True
@@ -151,25 +151,25 @@ async def main():
                 variables_config = [variables_config]  # Convert single node to list
             elif "UAVariables" in variables_config:
                 is_nodeset = True  # Full NodeSet format with UAVariables
-    
+
     if auto_discover:
         logger.info("Using auto-discovery mode - will discover all variables in namespace")
     else:
         logger.info(f"Using {'NodeSet' if is_nodeset else 'legacy schema'} format for variable configuration")
-    
+
     opcua_client = OPCUAClient(OPCUA_URL, namespace_to_use)
     opcua_client_instance = opcua_client
-    
+
     first_response = True
     device_registered = False
-    
+
     try:
         while not shutdown_requested:
             # Ensure connection
             if not opcua_client.is_connected:
                 if not await connect_with_retry(opcua_client):
                     break  # Shutdown requested during reconnect
-                
+
                 # Register device after successful connection
                 if not device_registered:
                     try:
@@ -177,21 +177,21 @@ async def main():
                         device_registered = True
                     except Exception as e:
                         logger.error(f"Failed to register device: {e}")
-            
+
             try:
                 # Read data based on format
                 if auto_discover:
                     # Read all variables directly from namespace
                     data = await opcua_client.read_all_variables_in_namespace()
                 elif is_nodeset:
-                    data = await opcua_client.read_from_nodeset(variables_config)
+                    data = await opcua_client.read_raw_nodeset(variables_config)
                 else:
                     data = await opcua_client.read_from_schema(variables_config)
-                
+
                 logger.info(f"Value read: {data}")
                 flattab = json_tree_to_table(data)
 
-                logger.info(f"Publishing {len(flattab)} sensor values to sensordata tables")
+                # logger.info(f"Publishing {len(flattab)} sensor values to sensordata tables")
                 await ironflock.publish_to_table('opcuadata', OPCUA_NAMESPACE, MACHINE_NAME, data)
 
                 if first_response:
@@ -200,9 +200,9 @@ async def main():
                         await register_measures(flattab)
                     except Exception as e:
                         logger.error(f"Failed to register measures: {e}")
-                
+
                 for row in flattab:
-                    logger.info(f"Publishing sensor data: {row['variable']} = {row['value']}")
+                    # logger.info(f"Publishing sensor data: {row['variable']} = {row['value']}")
                     await ironflock.publish_to_table('flatopcuadata', OPCUA_NAMESPACE, MACHINE_NAME, row)
 
             except Exception as e:
@@ -213,7 +213,7 @@ async def main():
                 continue
 
             await sleep(PUBLISH_INTERVAL)
-    
+
     except Exception as e:
         logger.error(f"Fatal error in main loop: {e}", exc_info=True)
         raise
