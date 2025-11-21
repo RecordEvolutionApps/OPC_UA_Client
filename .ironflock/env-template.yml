@@ -50,7 +50,7 @@ OPCUA_VARIABLES:
     optional: false
 PUBLISH_INTERVAL:
     label: Publish interval in seconds
-    defaultValue: 2
+    defaultValue: 1
     type: number
     secret: false
     optional: false
