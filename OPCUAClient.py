@@ -247,6 +247,10 @@ class OPCUAClient:
                 values.append(None)
         
         logger.info(f"Read {len(values)} values from {len(nodes_to_read)} nodes")
+        for i, ((browse_name, node_obj, display_name), value) in enumerate(zip(variable_nodes, values)):
+            logger.info(f"Node {browse_name} (NodeId: {node_obj.nodeid}): value = {value}, type = {type(value)}")
+        
+        logger.info(f"Read {len(values)} values from {len(nodes_to_read)} nodes")
         for i, ((_browse_name, node_obj, _display_name), value) in enumerate(zip(variable_nodes, values)):
             logger.info(f"Node {node_obj.nodeid}: value = {value}, type = {type(value)}")
         
