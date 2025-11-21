@@ -447,8 +447,6 @@ class OPCUAClient:
             for obj_node, obj_name in top_level_objects:
                 await browse_and_read(obj_node, [obj_name])
 
-            logger.info("Read all variables from namespace")
-
         except ConnectionError:
             logger.warning("Connection lost while reading all variables")
             self.is_connected = False
