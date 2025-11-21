@@ -125,7 +125,15 @@ class OPCUAClient:
                 # Try to get the node from the server
                 try:
                     ns, identifier = self._parse_nodeid(node_id_def)
-                    node_obj = self.client.get_node(f"ns={ns};s={identifier}")
+                    
+                    # Determine if identifier is integer or string
+                    if isinstance(identifier, str) and identifier.isdigit():
+                        # Integer identifier
+                        node_obj = self.client.get_node(f"ns={ns};i={identifier}")
+                    else:
+                        # String identifier
+                        node_obj = self.client.get_node(f"ns={ns};s={identifier}")
+                    
                     variable_nodes.append((browse_name, node_obj, display_name))
                     logger.debug(f"Found variable node: {browse_name} ({node_id_def})")
                 except Exception as e:
