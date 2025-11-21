@@ -146,7 +146,7 @@ async def main():
                 else:
                     data = await opcua_client.read_from_schema(variables_config)
                 
-                logger.debug(f"Value read: {data}")
+                logger.info(f"Value read: {data}")
                 flattab = json_tree_to_table(data)
 
                 logger.info(f"Publishing {len(flattab)} sensor values to sensordata tables")

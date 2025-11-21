@@ -126,16 +126,20 @@ class OPCUAClient:
                 try:
                     ns, identifier = self._parse_nodeid(node_id_def)
                     
+                    # Use the namespace index from the connection, not from the NodeId
+                    # (the NodeId might have a different index than what the server assigned)
+                    actual_ns = self.namespace_index if self.namespace_index is not None else ns
+                    
                     # Determine if identifier is integer or string
                     if isinstance(identifier, str) and identifier.isdigit():
                         # Integer identifier
-                        node_obj = self.client.get_node(f"ns={ns};i={identifier}")
+                        node_obj = self.client.get_node(f"ns={actual_ns};i={identifier}")
                     else:
                         # String identifier
-                        node_obj = self.client.get_node(f"ns={ns};s={identifier}")
+                        node_obj = self.client.get_node(f"ns={actual_ns};s={identifier}")
                     
                     variable_nodes.append((browse_name, node_obj, display_name))
-                    logger.debug(f"Found variable node: {browse_name} ({node_id_def})")
+                    logger.debug(f"Found variable node: {browse_name} (ns={actual_ns};i={identifier})")
                 except Exception as e:
                     logger.warning(f"Could not resolve node {browse_name} ({node_id_def}): {e}")
         
@@ -231,41 +235,61 @@ class OPCUAClient:
         # Prepare for bulk reading
         nodes_to_read = [node_obj for _, node_obj, _ in variable_nodes]
         
-        # Read values from nodes
-        values = await self.client.read_values(nodes_to_read)
+        # Read values directly from each node
+        values = []
+        for node in nodes_to_read:
+            try:
+                value = await node.read_value()
+                values.append(value)
+                logger.info(f"Read value from {node.nodeid}: {value} (type: {type(value)})")
+            except Exception as e:
+                logger.warning(f"Failed to read value from {node.nodeid}: {e}")
+                values.append(None)
         
-        # Build nested structure from NodeId paths
-        for i, (browse_name, node_obj, display_name) in enumerate(variable_nodes):
+        logger.info(f"Read {len(values)} values from {len(nodes_to_read)} nodes")
+        for i, ((_browse_name, node_obj, _display_name), value) in enumerate(zip(variable_nodes, values)):
+            logger.info(f"Node {node_obj.nodeid}: value = {value}, type = {type(value)}")
+        
+        # Build nested structure from NodeSet
+        for i, (browse_name, _node_obj, display_name) in enumerate(variable_nodes):
             value = values[i]
             
-            # Get the original node definition to extract NodeId
-            node_def = nodeset[i] if isinstance(nodeset, list) and i < len(nodeset) else {}
-            node_id = node_def.get("NodeId", "")
+            # Get the original node definition
+            if isinstance(nodeset, dict) and "UAVariables" in nodeset:
+                node_def = nodeset["UAVariables"][i] if i < len(nodeset["UAVariables"]) else {}
+            elif isinstance(nodeset, list):
+                node_def = nodeset[i] if i < len(nodeset) else {}
+            else:
+                node_def = {}
             
-            # Try to extract path from NodeId
+            # Try to get path from multiple sources (in priority order)
             path_parts = None
             
-            # Parse string-based NodeId (e.g., "ns=1;s=Machine1.Tank.Temperature")
-            if isinstance(node_id, str) and ";s=" in node_id:
-                # Extract the string identifier part
-                id_part = node_id.split(";s=")[-1]
-                # Split by dot to get hierarchy
-                path_parts = id_part.split(".")
-            elif isinstance(node_id, dict):
-                # Handle dict-based NodeId
-                id_val = node_id.get("Id", "")
-                if isinstance(id_val, str) and "." in id_val:
-                    path_parts = id_val.split(".")
+            # 1. Check for explicit Path field (preferred)
+            if "Path" in node_def:
+                path_str = node_def["Path"]
+                if isinstance(path_str, str) and path_str:
+                    path_parts = path_str.split(".")
             
-            # If we found a path, build nested structure; otherwise use simple name
+            # 2. Try NodeId string identifier (e.g., "ns=1;s=Machine.Tank.Temperature")
+            if not path_parts:
+                node_id = node_def.get("NodeId", "")
+                if isinstance(node_id, str) and ";s=" in node_id:
+                    id_part = node_id.split(";s=")[-1]
+                    if "." in id_part:
+                        path_parts = id_part.split(".")
+                elif isinstance(node_id, dict):
+                    id_val = node_id.get("Id", "")
+                    if isinstance(id_val, str) and "." in id_val:
+                        path_parts = id_val.split(".")
+            
+            # Build nested structure from path
             if path_parts and len(path_parts) > 1:
-                # Build nested dict from path
                 nested = self._build_nested_dict(path_parts, value)
-                # Merge into main data structure
                 data = self._merge_nested_dicts(data, nested)
                 logger.debug(f"Added nested variable: {'.'.join(path_parts)} = {value}")
             else:
-                # Fallback: use clean name (strip namespace prefix)
+                # Fallback: use display name or browse name
                 clean_name = browse_name.split(":")[-1] if ":" in browse_name else browse_name
                 if display_name and display_name != browse_name:
                     clean_name = display_name
