@@ -1,10 +1,10 @@
 {
   "NamespaceUris": [
-    "http://example.com/MyMachine/"
+    "example:ironflock:com"
   ],
   "Models": [
     {
-      "ModelUri": "http://example.com/MyMachine/",
+      "ModelUri": "example:ironflock:com",
       "Version": "1.0.0",
       "PublicationDate": "2024-01-01T00:00:00Z"
     }
@@ -36,16 +36,26 @@
       "References": [
         { "ReferenceType": "HasSubtype", "IsForward": false, "Target": "BaseObjectType" }
       ]
+    },
+    {
+      "NodeId": "ns=1;i=1003",
+      "BrowseName": "1:StatusType",
+      "DisplayName": { "Locale": "en", "Text": "StatusType" },
+      "Description": { "Locale": "en", "Text": "Represents a status component" },
+      "References": [
+        { "ReferenceType": "HasSubtype", "IsForward": false, "Target": "BaseObjectType" }
+      ]
     }
   ],
   "UAObjects": [
     {
       "NodeId": "ns=1;i=5001",
-      "BrowseName": "1:Machine1",
-      "DisplayName": { "Locale": "en", "Text": "Machine1" },
+      "BrowseName": "1:Machine",
+      "DisplayName": { "Locale": "en", "Text": "Machine" },
       "TypeDefinition": "ns=1;i=1001",
       "References": [
-        { "ReferenceType": "HasComponent", "Target": "ns=1;i=5002" }
+        { "ReferenceType": "HasComponent", "Target": "ns=1;i=5002" },
+        { "ReferenceType": "HasComponent", "Target": "ns=1;i=5003" }
       ]
     },
     {
@@ -55,25 +65,21 @@
       "TypeDefinition": "ns=1;i=1002",
       "ParentNodeId": "ns=1;i=5001",
       "References": [
-        { "ReferenceType": "HasComponent", "Target": "ns=1;i=6001" },
         { "ReferenceType": "HasComponent", "Target": "ns=1;i=7001" }
+      ]
+    },
+    {
+      "NodeId": "ns=1;i=5003",
+      "BrowseName": "1:Status",
+      "DisplayName": { "Locale": "en", "Text": "Status" },
+      "TypeDefinition": "ns=1;i=1003",
+      "ParentNodeId": "ns=1;i=5001",
+      "References": [
+        { "ReferenceType": "HasComponent", "Target": "ns=1;i=8001" }
       ]
     }
   ],
   "UAVariables": [
-    {
-      "NodeId": "ns=1;i=6001",
-      "BrowseName": "1:Status",
-      "DisplayName": { "Locale": "en", "Text": "Status" },
-      "ParentNodeId": "ns=1;i=5002",
-      "DataType": "String",
-      "ValueRank": -1,
-      "AccessLevel": 3,
-      "UserAccessLevel": 3,
-      "Value": {
-        "String": "Running"
-      }
-    },
     {
       "NodeId": "ns=1;i=7001",
       "BrowseName": "1:Temperature",
@@ -85,6 +91,19 @@
       "UserAccessLevel": 3,
       "Value": {
         "Double": 42.7
+      }
+    },
+    {
+      "NodeId": "ns=1;i=8001",
+      "BrowseName": "1:Voltage",
+      "DisplayName": { "Locale": "en", "Text": "Voltage" },
+      "ParentNodeId": "ns=1;i=5003",
+      "DataType": "Double",
+      "ValueRank": -1,
+      "AccessLevel": 3,
+      "UserAccessLevel": 3,
+      "Value": {
+        "Double": 220.5
       }
     }
   ]

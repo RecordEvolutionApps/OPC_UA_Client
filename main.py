@@ -149,6 +149,7 @@ async def main():
                 logger.debug(f"Value read: {data}")
                 flattab = json_tree_to_table(data)
 
+                logger.info(f"Publishing {len(flattab)} sensor values to sensordata tables")
                 await ironflock.publish_to_table('opcuadata', OPCUA_NAMESPACE, MACHINE_NAME, data)
 
                 if first_response:
@@ -156,7 +157,7 @@ async def main():
                     await register_measures(flattab)
                 
                 for row in flattab:
-                    logger.debug(f"Publishing row: {row}")
+                    logger.info(f"Publishing sensor data: {row['variable']} = {row['value']}")
                     await ironflock.publish_to_table('flatopcuadata', OPCUA_NAMESPACE, MACHINE_NAME, row)
 
             except Exception as e:
