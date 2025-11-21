@@ -126,16 +126,20 @@ class OPCUAClient:
                 try:
                     ns, identifier = self._parse_nodeid(node_id_def)
                     
+                    # Use the namespace index from the connection, not from the NodeId
+                    # (the NodeId might have a different index than what the server assigned)
+                    actual_ns = self.namespace_index if self.namespace_index is not None else ns
+                    
                     # Determine if identifier is integer or string
                     if isinstance(identifier, str) and identifier.isdigit():
                         # Integer identifier
-                        node_obj = self.client.get_node(f"ns={ns};i={identifier}")
+                        node_obj = self.client.get_node(f"ns={actual_ns};i={identifier}")
                     else:
                         # String identifier
-                        node_obj = self.client.get_node(f"ns={ns};s={identifier}")
+                        node_obj = self.client.get_node(f"ns={actual_ns};s={identifier}")
                     
                     variable_nodes.append((browse_name, node_obj, display_name))
-                    logger.debug(f"Found variable node: {browse_name} ({node_id_def})")
+                    logger.debug(f"Found variable node: {browse_name} (ns={actual_ns};i={identifier})")
                 except Exception as e:
                     logger.warning(f"Could not resolve node {browse_name} ({node_id_def}): {e}")
         
@@ -231,8 +235,20 @@ class OPCUAClient:
         # Prepare for bulk reading
         nodes_to_read = [node_obj for _, node_obj, _ in variable_nodes]
         
-        # Read values from nodes
-        values = await self.client.read_values(nodes_to_read)
+        # Read values directly from each node
+        values = []
+        for node in nodes_to_read:
+            try:
+                value = await node.read_value()
+                values.append(value)
+                logger.info(f"Read value from {node.nodeid}: {value} (type: {type(value)})")
+            except Exception as e:
+                logger.warning(f"Failed to read value from {node.nodeid}: {e}")
+                values.append(None)
+        
+        logger.info(f"Read {len(values)} values from {len(nodes_to_read)} nodes")
+        for i, ((browse_name, node_obj, display_name), value) in enumerate(zip(variable_nodes, values)):
+            logger.info(f"Node {browse_name} (NodeId: {node_obj.nodeid}): value = {value}, type = {type(value)}")
         
         # Build nested structure from NodeId paths
         for i, (browse_name, node_obj, display_name) in enumerate(variable_nodes):
