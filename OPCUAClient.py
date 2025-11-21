@@ -250,18 +250,16 @@ class OPCUAClient:
             try:
                 value = await node.read_value()
                 values.append(value)
-                logger.info(f"Read value from {node.nodeid}: {value} (type: {type(value)})")
+                logger.debug(f"Read value from {node.nodeid}: {value}")
+            except ConnectionError as e:
+                logger.error(f"Connection lost while reading {node.nodeid}: {e}")
+                self.is_connected = False
+                raise
             except Exception as e:
                 logger.warning(f"Failed to read value from {node.nodeid}: {e}")
                 values.append(None)
         
-        logger.info(f"Read {len(values)} values from {len(nodes_to_read)} nodes")
-        for i, ((browse_name, node_obj, display_name), value) in enumerate(zip(variable_nodes, values)):
-            logger.info(f"Node {browse_name} (NodeId: {node_obj.nodeid}): value = {value}, type = {type(value)}")
-        
-        logger.info(f"Read {len(values)} values from {len(nodes_to_read)} nodes")
-        for i, ((_browse_name, node_obj, _display_name), value) in enumerate(zip(variable_nodes, values)):
-            logger.info(f"Node {node_obj.nodeid}: value = {value}, type = {type(value)}")
+        logger.debug(f"Read {len(values)} values from {len(nodes_to_read)} nodes")
         
         # Build nested structure from NodeSet
         for i, (browse_name, _node_obj, display_name) in enumerate(variable_nodes):
@@ -346,7 +344,12 @@ class OPCUAClient:
             return {"tsp": tsp, "data": populated_schema}
 
         # Read values from nodes
-        values = await self.client.read_values(nodes_to_read)
+        try:
+            values = await self.client.read_values(nodes_to_read)
+        except ConnectionError as e:
+            logger.error(f"Connection lost while reading values: {e}")
+            self.is_connected = False
+            raise
 
         # Populate the schema with the read values
         for i, node in enumerate(nodes_to_read):
