@@ -405,11 +405,16 @@ class OPCUAClient:
             objects_node = self.client.nodes.objects
             
             # Recursively browse and read all variable values
-            async def browse_and_read(node, path_parts=None):
+            async def browse_and_read(node, path_parts=None, include_current=False):
                 if path_parts is None:
                     path_parts = []
                 
                 try:
+                    # If we should include current node in path, add it
+                    if include_current:
+                        browse_name = await node.read_browse_name()
+                        path_parts = path_parts + [browse_name.Name]
+                    
                     children = await node.get_children()
                     for child in children:
                         child_node_id = child.nodeid
@@ -434,14 +439,14 @@ class OPCUAClient:
                                 logger.debug(f"Read variable: {'.'.join(current_path)} = {value}")
                             except Exception as e:
                                 logger.debug(f"Failed to read variable {'.'.join(current_path)}: {e}")
-                        # If it's an object, recurse into it
+                        # If it's an object, recurse into it with include_current=False since name is already in path
                         elif node_class.value == 1:  # Object
-                            await browse_and_read(child, current_path)
+                            await browse_and_read(child, current_path, include_current=False)
                 except Exception as e:
                     logger.debug(f"Error browsing node: {e}")
             
-            await browse_and_read(objects_node)
-            logger.info(f"Read all variables from namespace")
+            await browse_and_read(objects_node, include_current=False)
+            logger.info("Read all variables from namespace")
             
         except ConnectionError:
             logger.warning("Connection lost while reading all variables")
