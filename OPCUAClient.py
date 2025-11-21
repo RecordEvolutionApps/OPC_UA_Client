@@ -404,18 +404,21 @@ class OPCUAClient:
         try:
             objects_node = self.client.nodes.objects
             
-            # Recursively browse and read all variable values
-            async def browse_and_read(node, path_parts=None, include_current=False):
+            # First, find all top-level objects in our namespace
+            top_level_objects = []
+            children = await objects_node.get_children()
+            for child in children:
+                if child.nodeid.NamespaceIndex == self.namespace_index:
+                    node_class = await child.read_node_class()
+                    if node_class.value == 1:  # Object
+                        browse_name = await child.read_browse_name()
+                        top_level_objects.append((child, browse_name.Name))
+            
+            # Recursively browse and read all variable values under each top-level object
+            async def browse_and_read(node, path_parts):
                 nonlocal data
-                if path_parts is None:
-                    path_parts = []
                 
                 try:
-                    # If we should include current node in path, add it
-                    if include_current:
-                        browse_name = await node.read_browse_name()
-                        path_parts = path_parts + [browse_name.Name]
-                    
                     children = await node.get_children()
                     for child in children:
                         child_node_id = child.nodeid
@@ -442,11 +445,14 @@ class OPCUAClient:
                                 logger.debug(f"Failed to read variable {'.'.join(current_path)}: {e}")
                         # If it's an object, recurse into it
                         elif node_class.value == 1:  # Object
-                            await browse_and_read(child, current_path, include_current=False)
+                            await browse_and_read(child, current_path)
                 except Exception as e:
                     logger.debug(f"Error browsing node: {e}")
             
-            await browse_and_read(objects_node, include_current=False)
+            # Browse each top-level object with its name as the root
+            for obj_node, obj_name in top_level_objects:
+                await browse_and_read(obj_node, [obj_name])
+            
             logger.info("Read all variables from namespace")
             
         except ConnectionError:
