@@ -15,6 +15,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Reduce noise from asyncua library
+logging.getLogger('asyncua').setLevel(logging.WARNING)
+
 def clean_multiline_env_var(env_value):
     """
     Clean multiline YAML strings that come from environment variables.
@@ -162,7 +165,7 @@ async def main():
                         await register_device()
                         device_registered = True
                     except Exception as e:
-                        logger.error(f"Failed to register device: {e}", exc_info=True)
+                        logger.error(f"Failed to register device: {e}")
             
             try:
                 # Read data based on format
@@ -182,14 +185,14 @@ async def main():
                     try:
                         await register_measures(flattab)
                     except Exception as e:
-                        logger.error(f"Failed to register measures: {e}", exc_info=True)
+                        logger.error(f"Failed to register measures: {e}")
                 
                 for row in flattab:
                     logger.info(f"Publishing sensor data: {row['variable']} = {row['value']}")
                     await ironflock.publish_to_table('flatopcuadata', OPCUA_NAMESPACE, MACHINE_NAME, row)
 
             except Exception as e:
-                logger.error(f"Error reading/publishing OPC UA variables: {e}", exc_info=True)
+                logger.error(f"Error reading/publishing OPC UA variables: {e}")
                 # Mark as disconnected to trigger reconnection
                 opcua_client.is_connected = False
                 # Continue immediately to trigger reconnection

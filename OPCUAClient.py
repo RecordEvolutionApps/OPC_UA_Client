@@ -14,6 +14,9 @@ class OPCUAClient:
 
     async def connect(self):
         """Connect to the OPC UA server and retrieve the namespace index."""
+        # Create a fresh client instance for each connection attempt
+        # This prevents issues with stale connection state
+        self.client = Client(self.endpoint)
         await self.client.connect()
         self.namespace_index = await self.get_namespace_index(self.namespace_name)
         self.is_connected = True
@@ -252,7 +255,7 @@ class OPCUAClient:
                 values.append(value)
                 logger.debug(f"Read value from {node.nodeid}: {value}")
             except ConnectionError as e:
-                logger.error(f"Connection lost while reading {node.nodeid}: {e}")
+                logger.warning(f"Connection lost while reading {node.nodeid}: {e}")
                 self.is_connected = False
                 raise
             except Exception as e:
@@ -347,7 +350,7 @@ class OPCUAClient:
         try:
             values = await self.client.read_values(nodes_to_read)
         except ConnectionError as e:
-            logger.error(f"Connection lost while reading values: {e}")
+            logger.warning(f"Connection lost while reading values: {e}")
             self.is_connected = False
             raise
 
