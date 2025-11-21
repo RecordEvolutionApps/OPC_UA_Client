@@ -41,8 +41,7 @@ OPCUA_NAMESPACE = os.environ.get("OPCUA_NAMESPACE", "example:ironflock:com")
 OPCUA_VARIABLES = os.environ.get("OPCUA_VARIABLES", '{"Tank": "Temperature"}')
 PUBLISH_INTERVAL = int(os.environ.get("PUBLISH_INTERVAL", 3))
 MACHINE_NAME = os.environ.get("MACHINE_NAME")
-RECONNECT_INTERVAL = int(os.environ.get("RECONNECT_INTERVAL", 5))
-MAX_RECONNECT_INTERVAL = int(os.environ.get("MAX_RECONNECT_INTERVAL", 60))
+RECONNECT_INTERVAL = int(os.environ.get("RECONNECT_INTERVAL", 1))
 
 # Global state for graceful shutdown
 shutdown_requested = False
@@ -83,21 +82,18 @@ async def register_measures(tab):
 
 
 async def connect_with_retry(opcua_client):
-    """Attempt to connect to OPC UA server with exponential backoff."""
-    reconnect_delay = RECONNECT_INTERVAL
-    
+    """Attempt to connect to OPC UA server with constant retry interval."""
     while not shutdown_requested:
         try:
             logger.info(f"Attempting to connect to OPC UA server at {OPCUA_URL}...")
             await opcua_client.connect()
             await opcua_client.print_all_nodes()
+            logger.info("Successfully reconnected to OPC UA server")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to OPC UA server: {e}")
-            logger.info(f"Retrying in {reconnect_delay} seconds...")
-            await sleep(reconnect_delay)
-            # Exponential backoff with max limit
-            reconnect_delay = min(reconnect_delay * 2, MAX_RECONNECT_INTERVAL)
+            logger.info(f"Retrying in {RECONNECT_INTERVAL} second(s)...")
+            await sleep(RECONNECT_INTERVAL)
     
     return False
 
@@ -196,7 +192,7 @@ async def main():
                 logger.error(f"Error reading/publishing OPC UA variables: {e}", exc_info=True)
                 # Mark as disconnected to trigger reconnection
                 opcua_client.is_connected = False
-                await sleep(RECONNECT_INTERVAL)
+                # Continue immediately to trigger reconnection
                 continue
 
             await sleep(PUBLISH_INTERVAL)
