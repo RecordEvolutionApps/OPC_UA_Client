@@ -406,6 +406,7 @@ class OPCUAClient:
             
             # Recursively browse and read all variable values
             async def browse_and_read(node, path_parts=None, include_current=False):
+                nonlocal data
                 if path_parts is None:
                     path_parts = []
                 
@@ -435,11 +436,11 @@ class OPCUAClient:
                                 value = await child.read_value()
                                 # Build nested dict from path
                                 nested = self._build_nested_dict(current_path, value)
-                                data.update(self._merge_nested_dicts(data, nested))
+                                data = self._merge_nested_dicts(data, nested)
                                 logger.debug(f"Read variable: {'.'.join(current_path)} = {value}")
                             except Exception as e:
                                 logger.debug(f"Failed to read variable {'.'.join(current_path)}: {e}")
-                        # If it's an object, recurse into it with include_current=False since name is already in path
+                        # If it's an object, recurse into it
                         elif node_class.value == 1:  # Object
                             await browse_and_read(child, current_path, include_current=False)
                 except Exception as e:
