@@ -24,27 +24,7 @@ OPCUA_NAMESPACE:
 OPCUA_VARIABLES:
     label: Subtree structure containing only the part of the server's OPCUA schema that should be extracted
     description: Can be either a full NodeSet structure or a legacy simple schema. See README for examples.
-    defaultValue: |
-        [
-            {
-                "NodeClass": "Variable",
-                "NodeId": "ns=1;i=7001",
-                "BrowseName": "1:Temperature",
-                "DisplayName": { "Locale": "en", "Text": "Temperature" },
-                "Path": "Machine.Tank.Temperature",
-                "DataType": "Double",
-                "ValueRank": -1
-            },
-            {
-                "NodeClass": "Variable",
-                "NodeId": "ns=1;i=8001",
-                "BrowseName": "1:Voltage",
-                "DisplayName": { "Locale": "en", "Text": "Voltage" },
-                "Path": "Machine.Status.Voltage",
-                "DataType": "Double",
-                "ValueRank": -1
-            }
-        ]
+    defaultValue: 
     type: textarea
     secret: false
     optional: false
