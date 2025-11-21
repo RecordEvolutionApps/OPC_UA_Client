@@ -41,6 +41,8 @@ OPCUA_NAMESPACE = os.environ.get("OPCUA_NAMESPACE", "example:ironflock:com")
 OPCUA_VARIABLES = os.environ.get("OPCUA_VARIABLES", '{"Tank": "Temperature"}')
 PUBLISH_INTERVAL = int(os.environ.get("PUBLISH_INTERVAL", 3))
 MACHINE_NAME = os.environ.get("MACHINE_NAME")
+RECONNECT_INTERVAL = int(os.environ.get("RECONNECT_INTERVAL", 5))
+MAX_RECONNECT_INTERVAL = int(os.environ.get("MAX_RECONNECT_INTERVAL", 60))
 
 # Global state for graceful shutdown
 shutdown_requested = False
@@ -80,6 +82,26 @@ async def register_measures(tab):
         logger.info("Measure Info registered")
 
 
+async def connect_with_retry(opcua_client):
+    """Attempt to connect to OPC UA server with exponential backoff."""
+    reconnect_delay = RECONNECT_INTERVAL
+    
+    while not shutdown_requested:
+        try:
+            logger.info(f"Attempting to connect to OPC UA server at {OPCUA_URL}...")
+            await opcua_client.connect()
+            await opcua_client.print_all_nodes()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to connect to OPC UA server: {e}")
+            logger.info(f"Retrying in {reconnect_delay} seconds...")
+            await sleep(reconnect_delay)
+            # Exponential backoff with max limit
+            reconnect_delay = min(reconnect_delay * 2, MAX_RECONNECT_INTERVAL)
+    
+    return False
+
+
 async def main():
     global opcua_client_instance, shutdown_requested
     
@@ -112,33 +134,40 @@ async def main():
     else:
         logger.info(f"Using namespace from OPCUA_NAMESPACE: {namespace_to_use}")
     
+    # Detect if it's a NodeSet structure (list, dict with NodeClass, or dict with UAVariables)
+    is_nodeset = False
+    if isinstance(variables_config, list):
+        is_nodeset = True
+    elif isinstance(variables_config, dict):
+        if "NodeClass" in variables_config:
+            is_nodeset = True
+            variables_config = [variables_config]  # Convert single node to list
+        elif "UAVariables" in variables_config:
+            is_nodeset = True  # Full NodeSet format with UAVariables
+    
+    logger.info(f"Using {'NodeSet' if is_nodeset else 'legacy schema'} format for variable configuration")
+    
     opcua_client = OPCUAClient(OPCUA_URL, namespace_to_use)
     opcua_client_instance = opcua_client
     
+    first_response = True
+    device_registered = False
+    
     try:
-        logger.info(f"Connecting to OPC UA server at {OPCUA_URL}...")
-        await opcua_client.connect()
-        logger.info("Connected to OPC UA server")
-        await opcua_client.print_all_nodes()
-
-        await register_device()
-
-        first_response = True
-        
-        # Detect if it's a NodeSet structure (list, dict with NodeClass, or dict with UAVariables)
-        is_nodeset = False
-        if isinstance(variables_config, list):
-            is_nodeset = True
-        elif isinstance(variables_config, dict):
-            if "NodeClass" in variables_config:
-                is_nodeset = True
-                variables_config = [variables_config]  # Convert single node to list
-            elif "UAVariables" in variables_config:
-                is_nodeset = True  # Full NodeSet format with UAVariables
-        
-        logger.info(f"Using {'NodeSet' if is_nodeset else 'legacy schema'} format for variable configuration")
-        
         while not shutdown_requested:
+            # Ensure connection
+            if not opcua_client.is_connected:
+                if not await connect_with_retry(opcua_client):
+                    break  # Shutdown requested during reconnect
+                
+                # Register device after successful connection
+                if not device_registered:
+                    try:
+                        await register_device()
+                        device_registered = True
+                    except Exception as e:
+                        logger.error(f"Failed to register device: {e}", exc_info=True)
+            
             try:
                 # Read data based on format
                 if is_nodeset:
@@ -154,7 +183,10 @@ async def main():
 
                 if first_response:
                     first_response = False
-                    await register_measures(flattab)
+                    try:
+                        await register_measures(flattab)
+                    except Exception as e:
+                        logger.error(f"Failed to register measures: {e}", exc_info=True)
                 
                 for row in flattab:
                     logger.info(f"Publishing sensor data: {row['variable']} = {row['value']}")
@@ -162,7 +194,9 @@ async def main():
 
             except Exception as e:
                 logger.error(f"Error reading/publishing OPC UA variables: {e}", exc_info=True)
-                await sleep(5)  # Backoff on error
+                # Mark as disconnected to trigger reconnection
+                opcua_client.is_connected = False
+                await sleep(RECONNECT_INTERVAL)
                 continue
 
             await sleep(PUBLISH_INTERVAL)
@@ -171,12 +205,9 @@ async def main():
         logger.error(f"Fatal error in main loop: {e}", exc_info=True)
         raise
     finally:
-        logger.info("Disconnecting from OPC UA server...")
-        try:
+        logger.info("Shutting down...")
+        if opcua_client.is_connected:
             await opcua_client.disconnect()
-            logger.info("Disconnected successfully")
-        except Exception as e:
-            logger.error(f"Error during disconnect: {e}", exc_info=True)
 
 if __name__ == "__main__":
     ironflock = IronFlock(mainFunc=main)

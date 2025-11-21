@@ -10,15 +10,24 @@ class OPCUAClient:
         self.namespace_name = namespace_name
         self.client = Client(endpoint)
         self.namespace_index = None
+        self.is_connected = False
 
     async def connect(self):
         """Connect to the OPC UA server and retrieve the namespace index."""
         await self.client.connect()
         self.namespace_index = await self.get_namespace_index(self.namespace_name)
+        self.is_connected = True
+        logger.info("Successfully connected to OPC UA server")
 
     async def disconnect(self):
         """Disconnect from the OPC UA server."""
-        await self.client.disconnect()
+        try:
+            await self.client.disconnect()
+            self.is_connected = False
+            logger.info("Disconnected from OPC UA server")
+        except Exception as e:
+            logger.warning(f"Error during disconnect: {e}")
+            self.is_connected = False
 
     async def get_namespace_index(self, namespace_name):
         """Retrieve the namespace index from the server based on its name."""
