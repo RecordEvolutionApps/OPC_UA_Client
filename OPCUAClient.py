@@ -391,7 +391,6 @@ class OPCUAClient:
         Returns a dictionary with timestamp and nested data structure.
         This is simpler than discovery - it reads everything in one go.
         """
-        logger.info(f"Reading all variables from namespace index {self.namespace_index}")
         tsp = datetime.now().astimezone().isoformat()
         data = {}
 
