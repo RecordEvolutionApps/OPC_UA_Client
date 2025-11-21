@@ -90,7 +90,6 @@ async def connect_with_retry(opcua_client):
         try:
             logger.info(f"Attempting to connect to OPC UA server at {OPCUA_URL}...")
             await opcua_client.connect()
-            await opcua_client.print_all_nodes()
             logger.info("Successfully reconnected to OPC UA server")
             return True
         except Exception as e:
@@ -184,7 +183,7 @@ async def main():
                     # Read all variables directly from namespace
                     data = await opcua_client.read_all_variables_in_namespace()
                 elif is_nodeset:
-                    data = await opcua_client.read_raw_nodeset(variables_config)
+                    data = await opcua_client.read_from_nodeset(variables_config)
                 else:
                     data = await opcua_client.read_from_schema(variables_config)
 
