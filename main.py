@@ -41,7 +41,7 @@ DEVICE_KEY = os.environ["DEVICE_KEY"]
 DEVICE_NAME = os.environ.get("DEVICE_NAME")
 OPCUA_URL = os.environ.get("OPCUA_URL", "opc.tcp://localhost:4840/opcuaserver")
 OPCUA_NAMESPACE = os.environ.get("OPCUA_NAMESPACE", "example:ironflock:com")
-OPCUA_VARIABLES = os.environ.get("OPCUA_VARIABLES", '{"Tank": "Temperature"}')
+OPCUA_VARIABLES = os.environ.get("OPCUA_VARIABLES", "")
 PUBLISH_INTERVAL = int(os.environ.get("PUBLISH_INTERVAL", 3))
 MACHINE_NAME = os.environ.get("MACHINE_NAME")
 RECONNECT_INTERVAL = int(os.environ.get("RECONNECT_INTERVAL", 1))
@@ -113,19 +113,24 @@ async def main():
     cleaned_variables = clean_multiline_env_var(OPCUA_VARIABLES)
     logger.debug(f"Cleaned OPCUA_VARIABLES: {cleaned_variables}")
     
-    try:
-        variables_config = json.loads(cleaned_variables)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse OPCUA_VARIABLES as JSON: {e}")
-        logger.error(f"Raw value: {OPCUA_VARIABLES}")
-        logger.error(f"Cleaned value: {cleaned_variables}")
-        raise
+    # Check if OPCUA_VARIABLES is empty or just whitespace
+    if not cleaned_variables or cleaned_variables.strip() == "":
+        logger.info("OPCUA_VARIABLES is empty - will auto-discover all variables")
+        variables_config = None  # Signal for auto-discovery
+    else:
+        try:
+            variables_config = json.loads(cleaned_variables)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse OPCUA_VARIABLES as JSON: {e}")
+            logger.error(f"Raw value: {OPCUA_VARIABLES}")
+            logger.error(f"Cleaned value: {cleaned_variables}")
+            raise
     
     # Extract namespace from OPCUA_VARIABLES if present, otherwise use OPCUA_NAMESPACE
     namespace_to_use = OPCUA_NAMESPACE
     
     # Check if variables_config contains NamespaceUris (full NodeSet format)
-    if isinstance(variables_config, dict) and "NamespaceUris" in variables_config:
+    if variables_config and isinstance(variables_config, dict) and "NamespaceUris" in variables_config:
         uris = variables_config.get("NamespaceUris", [])
         if uris and len(uris) > 0:
             namespace_to_use = uris[0]
@@ -135,16 +140,22 @@ async def main():
     
     # Detect if it's a NodeSet structure (list, dict with NodeClass, or dict with UAVariables)
     is_nodeset = False
-    if isinstance(variables_config, list):
-        is_nodeset = True
-    elif isinstance(variables_config, dict):
-        if "NodeClass" in variables_config:
-            is_nodeset = True
-            variables_config = [variables_config]  # Convert single node to list
-        elif "UAVariables" in variables_config:
-            is_nodeset = True  # Full NodeSet format with UAVariables
+    auto_discover = variables_config is None
     
-    logger.info(f"Using {'NodeSet' if is_nodeset else 'legacy schema'} format for variable configuration")
+    if not auto_discover:
+        if isinstance(variables_config, list):
+            is_nodeset = True
+        elif isinstance(variables_config, dict):
+            if "NodeClass" in variables_config:
+                is_nodeset = True
+                variables_config = [variables_config]  # Convert single node to list
+            elif "UAVariables" in variables_config:
+                is_nodeset = True  # Full NodeSet format with UAVariables
+    
+    if auto_discover:
+        logger.info("Using auto-discovery mode - will discover all variables in namespace")
+    else:
+        logger.info(f"Using {'NodeSet' if is_nodeset else 'legacy schema'} format for variable configuration")
     
     opcua_client = OPCUAClient(OPCUA_URL, namespace_to_use)
     opcua_client_instance = opcua_client
@@ -169,7 +180,10 @@ async def main():
             
             try:
                 # Read data based on format
-                if is_nodeset:
+                if auto_discover:
+                    # Read all variables directly from namespace
+                    data = await opcua_client.read_all_variables_in_namespace()
+                elif is_nodeset:
                     data = await opcua_client.read_from_nodeset(variables_config)
                 else:
                     data = await opcua_client.read_from_schema(variables_config)

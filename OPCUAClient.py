@@ -390,3 +390,64 @@ class OPCUAClient:
         children = await objects_node.get_children()
         for child in children:
             logger.info(f"Node: {child}")
+
+    async def read_all_variables_in_namespace(self):
+        """
+        Read all variable nodes and their values from the namespace.
+        Returns a dictionary with timestamp and nested data structure.
+        This is simpler than discovery - it reads everything in one go.
+        """
+        logger.info(f"Reading all variables from namespace index {self.namespace_index}")
+        tsp = datetime.now().astimezone().isoformat()
+        data = {}
+        
+        try:
+            objects_node = self.client.nodes.objects
+            
+            # Recursively browse and read all variable values
+            async def browse_and_read(node, path_parts=None):
+                if path_parts is None:
+                    path_parts = []
+                
+                try:
+                    children = await node.get_children()
+                    for child in children:
+                        child_node_id = child.nodeid
+                        
+                        # Only process nodes in our target namespace
+                        if child_node_id.NamespaceIndex != self.namespace_index:
+                            continue
+                        
+                        # Get node class and browse name
+                        node_class = await child.read_node_class()
+                        browse_name = await child.read_browse_name()
+                        
+                        current_path = path_parts + [browse_name.Name]
+                        
+                        # If it's a variable, read its value
+                        if node_class.value == 2:  # Variable
+                            try:
+                                value = await child.read_value()
+                                # Build nested dict from path
+                                nested = self._build_nested_dict(current_path, value)
+                                data.update(self._merge_nested_dicts(data, nested))
+                                logger.debug(f"Read variable: {'.'.join(current_path)} = {value}")
+                            except Exception as e:
+                                logger.debug(f"Failed to read variable {'.'.join(current_path)}: {e}")
+                        # If it's an object, recurse into it
+                        elif node_class.value == 1:  # Object
+                            await browse_and_read(child, current_path)
+                except Exception as e:
+                    logger.debug(f"Error browsing node: {e}")
+            
+            await browse_and_read(objects_node)
+            logger.info(f"Read all variables from namespace")
+            
+        except ConnectionError:
+            logger.warning("Connection lost while reading all variables")
+            self.is_connected = False
+            raise
+        except Exception as e:
+            logger.error(f"Error reading all variables: {e}")
+        
+        return {"tsp": tsp, "data": data}
