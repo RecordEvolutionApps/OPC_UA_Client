@@ -1,15 +1,18 @@
 import logging
-from asyncua import Client
 from datetime import datetime
+
+from asyncua import Client
 
 logger = logging.getLogger(__name__)
 
+
 class OPCUAClient:
-    def __init__(self, endpoint, namespace_name):
+    def __init__(self, endpoint, namespace_name=None):
         self.endpoint = endpoint
         self.namespace_name = namespace_name
         self.client = Client(endpoint)
         self.namespace_index = None
+        self.namespace_map = {}  # Maps namespace URI to server index
         self.is_connected = False
 
     async def connect(self):
@@ -18,7 +21,16 @@ class OPCUAClient:
         # This prevents issues with stale connection state
         self.client = Client(self.endpoint)
         await self.client.connect()
-        self.namespace_index = await self.get_namespace_index(self.namespace_name)
+
+        # Build namespace URI to index map
+        namespaces = await self.client.get_namespace_array()
+        self.namespace_map = {uri: idx for idx, uri in enumerate(namespaces)}
+        logger.debug(f"Namespace map: {self.namespace_map}")
+
+        # Get primary namespace index if namespace_name is provided
+        if self.namespace_name:
+            self.namespace_index = await self.get_namespace_index(self.namespace_name)
+
         self.is_connected = True
         logger.info("Successfully connected to OPC UA server")
 
@@ -72,6 +84,30 @@ class OPCUAClient:
                 return uris[0]  # Return first custom namespace
         return None
 
+    def _build_nodeset_namespace_map(self, nodeset):
+        """
+        Build a mapping from NodeSet namespace indices to server namespace indices.
+        NodeSet uses indices 0, 1, 2... for namespaces in its NamespaceUris array.
+        We need to map these to the server's actual namespace indices.
+
+        Returns: dict mapping NodeSet ns index -> server ns index
+        """
+        ns_map = {0: 0}  # Standard OPC UA namespace is always 0
+
+        if isinstance(nodeset, dict) and "NamespaceUris" in nodeset:
+            nodeset_uris = nodeset.get("NamespaceUris", [])
+            for nodeset_idx, uri in enumerate(nodeset_uris, start=1):
+                if uri in self.namespace_map:
+                    server_idx = self.namespace_map[uri]
+                    ns_map[nodeset_idx] = server_idx
+                    logger.debug(
+                        f"Mapped NodeSet ns={nodeset_idx} ({uri}) -> server ns={server_idx}"
+                    )
+                else:
+                    logger.warning(f"Namespace URI '{uri}' from NodeSet not found on server")
+
+        return ns_map
+
     def _parse_nodeid(self, nodeid_str):
         """
         Parse a NodeId string (e.g., 'ns=2;i=1001' or 'ns=2;s=Tank.Temperature').
@@ -99,12 +135,15 @@ class OPCUAClient:
     async def extract_variable_nodes_from_nodeset(self, nodeset):
         """
         Extract variable nodes from a NodeSet JSON structure.
-        Returns a list of (browse_name, node_id, display_name) tuples for Variable nodes.
+        Returns a list of (browse_name, node_obj, display_name, namespace_index) tuples for Variable nodes.
 
         :param nodeset: List of node dictionaries from NodeSet JSON, or full NodeSet with UAVariables
-        :return: List of (browse_name, node_obj, display_name) tuples
+        :return: List of (browse_name, node_obj, display_name, namespace_index) tuples
         """
         variable_nodes = []
+
+        # Build namespace mapping from NodeSet to server
+        ns_map = self._build_nodeset_namespace_map(nodeset)
 
         # Handle full NodeSet structure with UAVariables key
         if isinstance(nodeset, dict) and "UAVariables" in nodeset:
@@ -136,11 +175,10 @@ class OPCUAClient:
 
                 # Try to get the node from the server
                 try:
-                    ns, identifier = self._parse_nodeid(node_id_def)
+                    nodeset_ns, identifier = self._parse_nodeid(node_id_def)
 
-                    # Use the namespace index from the connection, not from the NodeId
-                    # (the NodeId might have a different index than what the server assigned)
-                    actual_ns = self.namespace_index if self.namespace_index is not None else ns
+                    # Map NodeSet namespace index to server namespace index
+                    actual_ns = ns_map.get(nodeset_ns, nodeset_ns)
 
                     # Determine if identifier is integer or string
                     if isinstance(identifier, str) and identifier.isdigit():
@@ -150,8 +188,10 @@ class OPCUAClient:
                         # String identifier
                         node_obj = self.client.get_node(f"ns={actual_ns};s={identifier}")
 
-                    variable_nodes.append((browse_name, node_obj, display_name))
-                    logger.debug(f"Found variable node: {browse_name} (ns={actual_ns};i={identifier})")
+                    variable_nodes.append((browse_name, node_obj, display_name, actual_ns))
+                    logger.debug(
+                        f"Found variable node: {browse_name} (ns={actual_ns};i={identifier})"
+                    )
                 except Exception as e:
                     logger.warning(f"Could not resolve node {browse_name} ({node_id_def}): {e}")
 
@@ -170,18 +210,25 @@ class OPCUAClient:
         for key, value in schema.items():
             # This 'key' is the one we want to keep in the final output, e.g., "Tank" or "Status"
             current_schema_key = key
-            current_schema_parent_path = parent_path_parts # The path to the parent of 'current_schema_key'
+            current_schema_parent_path = (
+                parent_path_parts  # The path to the parent of 'current_schema_key'
+            )
 
             if isinstance(value, dict):
                 # If it's a subtree, recurse and extend the list
-                leaf_nodes_info.extend(await self.extract_leaf_nodes(value, parent_path_parts + [current_schema_key]))
+                leaf_nodes_info.extend(
+                    await self.extract_leaf_nodes(value, parent_path_parts + [current_schema_key])
+                )
             else:
                 # 'value' is the OPC UA variable name (e.g., "Temperature", "Voltage")
                 opcua_variable_name = value
 
                 # The full path to the OPC UA node includes the schema path and the OPC UA variable name
                 # E.g., if schema_path is ['Tank'] and opcua_variable_name is 'Temperature', OPC UA path might be ['Tank', 'Temperature']
-                opcua_full_path_parts = parent_path_parts + [current_schema_key, opcua_variable_name]
+                opcua_full_path_parts = parent_path_parts + [
+                    current_schema_key,
+                    opcua_variable_name,
+                ]
 
                 node = await self.resolve_node_by_full_path(opcua_full_path_parts)
                 if node:
@@ -189,9 +236,19 @@ class OPCUAClient:
                     full_opcua_path_string = ".".join(opcua_full_path_parts)
                     logger.debug(f"Resolved {full_opcua_path_string} -> {node_id}")
                     # Store (OPC UA full path string, NodeId, parent path in original schema, key for this variable, actual OPC UA variable name)
-                    leaf_nodes_info.append((full_opcua_path_string, node_id, current_schema_parent_path, current_schema_key, opcua_variable_name))
+                    leaf_nodes_info.append(
+                        (
+                            full_opcua_path_string,
+                            node_id,
+                            current_schema_parent_path,
+                            current_schema_key,
+                            opcua_variable_name,
+                        )
+                    )
                 else:
-                    logger.warning(f"Could not resolve {'.'.join(opcua_full_path_parts)} to a node ID")
+                    logger.warning(
+                        f"Could not resolve {'.'.join(opcua_full_path_parts)} to a node ID"
+                    )
 
         return leaf_nodes_info
 
@@ -245,7 +302,7 @@ class OPCUAClient:
             return {"tsp": tsp, "data": data}
 
         # Prepare for bulk reading
-        nodes_to_read = [node_obj for _, node_obj, _ in variable_nodes]
+        nodes_to_read = [node_obj for _, node_obj, _, _ in variable_nodes]
 
         # Read values directly from each node
         values = []
@@ -264,8 +321,8 @@ class OPCUAClient:
 
         logger.debug(f"Read {len(values)} values from {len(nodes_to_read)} nodes")
 
-        # Build nested structure from NodeSet
-        for i, (browse_name, _node_obj, display_name) in enumerate(variable_nodes):
+        # Build nested structure from NodeSet, grouped by namespace
+        for i, (browse_name, _node_obj, display_name, ns_index) in enumerate(variable_nodes):
             value = values[i]
 
             # Get the original node definition
@@ -297,6 +354,10 @@ class OPCUAClient:
                     if isinstance(id_val, str) and "." in id_val:
                         path_parts = id_val.split(".")
 
+            # Prefix namespace to path (creates separate root for each namespace)
+            if path_parts and len(path_parts) > 0:
+                path_parts = [f"ns{ns_index}"] + path_parts
+
             # Build nested structure from path
             if path_parts and len(path_parts) > 1:
                 nested = self._build_nested_dict(path_parts, value)
@@ -311,7 +372,6 @@ class OPCUAClient:
                 logger.debug(f"Added flat variable: {clean_name} = {value}")
 
         return {"tsp": tsp, "data": data}
-
 
     async def read_from_schema(self, schema):
         """
@@ -332,16 +392,29 @@ class OPCUAClient:
         leaf_nodes_info = await self.extract_leaf_nodes(schema)
         if not leaf_nodes_info:
             logger.warning("No leaf nodes found in schema")
-            return {"tsp": tsp, "data": populated_schema} # Return schema with unresolved values if no nodes found
+            return {
+                "tsp": tsp,
+                "data": populated_schema,
+            }  # Return schema with unresolved values if no nodes found
 
         # Prepare for bulk reading
         nodes_to_read = []
         node_id_to_schema_info = {}
 
-        for full_opcua_path_string, node_id, schema_parent_path, schema_key_for_variable, opcua_variable_name in leaf_nodes_info:
+        for (
+            full_opcua_path_string,
+            node_id,
+            schema_parent_path,
+            schema_key_for_variable,
+            opcua_variable_name,
+        ) in leaf_nodes_info:
             nodes_to_read.append(self.client.get_node(node_id))
             # Store a reference back to the exact location in the populated_schema
-            node_id_to_schema_info[str(node_id)] = (schema_parent_path, schema_key_for_variable, opcua_variable_name)
+            node_id_to_schema_info[str(node_id)] = (
+                schema_parent_path,
+                schema_key_for_variable,
+                opcua_variable_name,
+            )
 
         if not nodes_to_read:
             logger.warning("No nodes to read after resolution")
@@ -359,7 +432,9 @@ class OPCUAClient:
         for i, node in enumerate(nodes_to_read):
             node_id_str = str(node.nodeid)
             if node_id_str in node_id_to_schema_info:
-                schema_parent_path, schema_key_for_variable, opcua_variable_name = node_id_to_schema_info[node_id_str]
+                schema_parent_path, schema_key_for_variable, opcua_variable_name = (
+                    node_id_to_schema_info[node_id_str]
+                )
                 read_value = values[i]
 
                 current_level = populated_schema
@@ -385,66 +460,88 @@ class OPCUAClient:
             # we just return None initially. This will be overwritten with a dict.
             return None
 
-    async def read_all_variables_in_namespace(self):
+    async def read_all_variables_in_namespace(self, namespace_indices=None):
         """
-        Read all variable nodes and their values from the namespace.
+        Read all variable nodes and their values from one or more namespaces.
         Returns a dictionary with timestamp and nested data structure.
-        This is simpler than discovery - it reads everything in one go.
+        Each namespace gets its own root node (ns2, ns3, etc.)
+
+        :param namespace_indices: List of namespace indices to read, or None to use self.namespace_index
+        :return: Dictionary with timestamp and data grouped by namespace
         """
         tsp = datetime.now().astimezone().isoformat()
         data = {}
 
+        # Determine which namespaces to scan
+        if namespace_indices is None:
+            if self.namespace_index is not None:
+                namespace_indices = [self.namespace_index]
+            else:
+                # Get all custom namespaces (skip standard OPC UA namespace 0)
+                namespace_indices = [idx for idx in self.namespace_map.values() if idx > 0]
+
+        if not namespace_indices:
+            logger.warning("No namespaces to read")
+            return {"tsp": tsp, "data": data}
+
+        logger.info(f"Reading all variables from namespace indices {namespace_indices}")
+
         try:
             objects_node = self.client.nodes.objects
 
-            # First, find all top-level objects in our namespace
-            top_level_objects = []
-            children = await objects_node.get_children()
-            for child in children:
-                if child.nodeid.NamespaceIndex == self.namespace_index:
-                    node_class = await child.read_node_class()
-                    if node_class.value == 1:  # Object
-                        browse_name = await child.read_browse_name()
-                        top_level_objects.append((child, browse_name.Name))
-
-            # Recursively browse and read all variable values under each top-level object
-            async def browse_and_read(node, path_parts):
-                nonlocal data
-
-                try:
-                    children = await node.get_children()
-                    for child in children:
-                        child_node_id = child.nodeid
-
-                        # Only process nodes in our target namespace
-                        if child_node_id.NamespaceIndex != self.namespace_index:
-                            continue
-
-                        # Get node class and browse name
+            for ns_idx in namespace_indices:
+                # Find all top-level objects in this namespace
+                top_level_objects = []
+                children = await objects_node.get_children()
+                for child in children:
+                    if child.nodeid.NamespaceIndex == ns_idx:
                         node_class = await child.read_node_class()
-                        browse_name = await child.read_browse_name()
+                        if node_class.value == 1:  # Object
+                            browse_name = await child.read_browse_name()
+                            top_level_objects.append((child, browse_name.Name))
 
-                        current_path = path_parts + [browse_name.Name]
+                # Recursively browse and read all variable values under each top-level object
+                async def browse_and_read(node, path_parts, target_ns_idx):
+                    nonlocal data
 
-                        # If it's a variable, read its value
-                        if node_class.value == 2:  # Variable
-                            try:
-                                value = await child.read_value()
-                                # Build nested dict from path
-                                nested = self._build_nested_dict(current_path, value)
-                                data = self._merge_nested_dicts(data, nested)
-                                logger.debug(f"Read variable: {'.'.join(current_path)} = {value}")
-                            except Exception as e:
-                                logger.debug(f"Failed to read variable {'.'.join(current_path)}: {e}")
-                        # If it's an object, recurse into it
-                        elif node_class.value == 1:  # Object
-                            await browse_and_read(child, current_path)
-                except Exception as e:
-                    logger.debug(f"Error browsing node: {e}")
+                    try:
+                        children = await node.get_children()
+                        for child in children:
+                            child_node_id = child.nodeid
 
-            # Browse each top-level object with its name as the root
-            for obj_node, obj_name in top_level_objects:
-                await browse_and_read(obj_node, [obj_name])
+                            # Only process nodes in our target namespace
+                            if child_node_id.NamespaceIndex != target_ns_idx:
+                                continue
+
+                            # Get node class and browse name
+                            node_class = await child.read_node_class()
+                            browse_name = await child.read_browse_name()
+
+                            current_path = path_parts + [browse_name.Name]
+
+                            # If it's a variable, read its value
+                            if node_class.value == 2:  # Variable
+                                try:
+                                    value = await child.read_value()
+                                    # Build nested dict from path
+                                    nested = self._build_nested_dict(current_path, value)
+                                    data = self._merge_nested_dicts(data, nested)
+                                    logger.debug(
+                                        f"Read variable: {'.'.join(current_path)} = {value}"
+                                    )
+                                except Exception as e:
+                                    logger.debug(
+                                        f"Failed to read variable {'.'.join(current_path)}: {e}"
+                                    )
+                            # If it's an object, recurse into it
+                            elif node_class.value == 1:  # Object
+                                await browse_and_read(child, current_path, target_ns_idx)
+                    except Exception as e:
+                        logger.debug(f"Error browsing node: {e}")
+
+                # Browse each top-level object with namespace prefix as root
+                for obj_node, obj_name in top_level_objects:
+                    await browse_and_read(obj_node, [f"ns{ns_idx}", obj_name], ns_idx)
 
         except ConnectionError:
             logger.warning("Connection lost while reading all variables")
