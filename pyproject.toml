@@ -27,7 +27,7 @@ classifiers = [
 
 dependencies = [
     "asyncua==1.1.8",
-    "ironflock==1.11.1",
+    "ironflock==1.11.2",
 ]
 
 [project.optional-dependencies]
